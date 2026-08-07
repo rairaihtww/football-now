@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Football Now">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Football Now</title>
+<style>
+:root{--bg:#0b0f14;--card:#121821;--card2:#171f2a;--text:#f4f7fb;--muted:#9aa7b6;--accent:#32d583;--line:#22303d;--chip:#1b2632}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+body{padding-top:env(safe-area-inset-top);padding-bottom:calc(74px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#081018 0%,#0b0f14 45%)}
+.app{max-width:520px;margin:0 auto;min-height:100vh}
+header{position:sticky;top:env(safe-area-inset-top);z-index:10;background:rgba(11,15,20,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px}.brand{font-weight:900;letter-spacing:.3px;font-size:20px}.brand span{color:var(--accent)}
+.iconbtn{width:40px;height:40px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:white;font-size:18px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 14px 12px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{border:none;white-space:nowrap;padding:9px 13px;border-radius:999px;background:var(--chip);color:#c7d0da;font-weight:700}.chip.active{background:var(--accent);color:#042014}
+.hero{margin:16px;border-radius:22px;overflow:hidden;position:relative;min-height:240px;background:radial-gradient(circle at 25% 15%,rgba(50,213,131,.35),transparent 30%),linear-gradient(145deg,#162433,#0c1118 65%);box-shadow:0 16px 42px rgba(0,0,0,.28)}
+.hero:after{content:"⚽";position:absolute;right:18px;top:18px;font-size:78px;opacity:.16;transform:rotate(-12deg)}.hero-content{position:absolute;left:18px;right:18px;bottom:18px}.badge{display:inline-block;background:var(--accent);color:#042014;font-size:12px;font-weight:900;padding:6px 9px;border-radius:8px;margin-bottom:10px}.hero h1{font-size:26px;line-height:1.15;margin:0 0 9px}.meta{font-size:12px;color:#c8d0d9}
+.section-title{display:flex;justify-content:space-between;align-items:center;padding:4px 18px 10px}.section-title h2{font-size:18px;margin:0}.section-title span{font-size:12px;color:var(--muted)}.feed{padding:0 14px}
+.news{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:10px}.thumb{height:82px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:36px;background:linear-gradient(145deg,#1d2a37,#111821)}.tag{font-size:11px;color:var(--accent);font-weight:800;margin-bottom:5px}.news h3{font-size:15px;line-height:1.35;margin:0 0 8px}.news p{font-size:11px;color:var(--muted);margin:0}.empty{display:none;text-align:center;color:var(--muted);padding:30px}.search{margin:14px 16px 0;display:none}.search input{width:100%;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:white;outline:none;font-size:15px}
+.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);height:calc(72px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(12,17,24,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);z-index:20}.nav{border:0;background:none;color:#8c99a7;font-size:11px;font-weight:700}.nav b{display:block;font-size:20px;margin-bottom:2px}.nav.active{color:var(--accent)}
+.install{margin:0 16px 16px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);font-size:13px;color:#cdd6df;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="topbar"><div class="brand">FOOTBALL <span>NOW</span></div><button class="iconbtn" id="searchBtn">⌕</button></div><div class="search" id="searchBox"><input id="searchInput" placeholder="チーム名・選手名で検索"></div><div class="chips"><button class="chip active" data-cat="all">おすすめ</button><button class="chip" data-cat="barca">バルセロナ</button><button class="chip" data-cat="transfer">移籍</button><button class="chip" data-cat="jleague">Jリーグ</button><button class="chip" data-cat="europe">欧州</button><button class="chip" data-cat="national">日本代表</button></div></header>
+<section class="hero"><div class="hero-content"><span class="badge">TOP STORY</span><h1>今日のサッカーを、ひとつの画面で。</h1><div class="meta">クラブ・移籍・試合・代表ニュースをまとめてチェック</div></div></section>
+<div class="install" id="installHint">Safariの共有ボタン →「ホーム画面に追加」でアプリのように使えます。</div>
+<div class="section-title"><h2>最新ニュース</h2><span id="count">6件</span></div>
+<main class="feed" id="feed">
+<article class="news" data-cat="barca europe" data-text="バルセロナ 中盤 試合 戦術"><div class="thumb">🔵🔴</div><div><div class="tag">BARCELONA</div><h3>バルサの中盤構成をチェック。今季の注目ポイントは？</h3><p>5分前 ・ 3分で読める</p></div></article>
+<article class="news" data-cat="transfer europe" data-text="移籍 市場 欧州 選手"><div class="thumb">🔄</div><div><div class="tag">TRANSFER</div><h3>移籍市場の最新動向。欧州主要クラブの補強状況まとめ</h3><p>18分前 ・ 4分で読める</p></div></article>
+<article class="news" data-cat="jleague" data-text="Jリーグ ファジアーノ 岡山 試合"><div class="thumb">🇯🇵</div><div><div class="tag">J.LEAGUE</div><h3>Jリーグ最新情報。今節の見どころと注目カード</h3><p>31分前 ・ 2分で読める</p></div></article>
+<article class="news" data-cat="national" data-text="日本代表 サッカー メンバー"><div class="thumb">⚽</div><div><div class="tag">JAPAN</div><h3>日本代表、次戦へ向けたメンバー争いを整理</h3><p>1時間前 ・ 3分で読める</p></div></article>
+<article class="news" data-cat="europe" data-text="プレミアリーグ 欧州 試合"><div class="thumb">🏟️</div><div><div class="tag">EUROPE</div><h3>欧州リーグの注目カードを一気に確認</h3><p>2時間前 ・ 5分で読める</p></div></article>
+<article class="news" data-cat="barca transfer" data-text="バルセロナ 移籍 補強"><div class="thumb">⭐</div><div><div class="tag">RUMORS</div><h3>バルセロナの補強候補をポジション別に見る</h3><p>3時間前 ・ 4分で読める</p></div></article>
+</main><div class="empty" id="empty">該当するニュースがありません</div></div>
+<nav class="bottom"><button class="nav active"><b>⌂</b>ホーム</button><button class="nav"><b>▤</b>試合</button><button class="nav"><b>☆</b>お気に入り</button><button class="nav"><b>⚙</b>設定</button></nav>
+<script>
+const chips=[...document.querySelectorAll('.chip')],items=[...document.querySelectorAll('.news')],count=document.getElementById('count'),empty=document.getElementById('empty'),searchBtn=document.getElementById('searchBtn'),searchBox=document.getElementById('searchBox'),searchInput=document.getElementById('searchInput');let category='all';
+function filter(){const q=searchInput.value.trim().toLowerCase();let shown=0;items.forEach(item=>{const cats=item.dataset.cat.split(' '),catOK=category==='all'||cats.includes(category),qOK=!q||item.innerText.toLowerCase().includes(q)||item.dataset.text.toLowerCase().includes(q),ok=catOK&&qOK;item.style.display=ok?'grid':'none';if(ok)shown++});count.textContent=shown+'件';empty.style.display=shown?'none':'block'}
+chips.forEach(c=>c.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));c.classList.add('active');category=c.dataset.cat;filter()}));searchBtn.addEventListener('click',()=>{searchBox.style.display=searchBox.style.display==='block'?'none':'block';if(searchBox.style.display==='block')searchInput.focus()});searchInput.addEventListener('input',filter);document.querySelectorAll('.nav').forEach(n=>n.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));n.classList.add('active')}));
+if(!window.navigator.standalone)document.getElementById('installHint').style.display='block';
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+</script>
+</body></html>
