@@ -75,3 +75,11 @@ icon-180.png と icon-512.png は今のリポジトリにあるものをその�
 - 全試合45分制を明示
 - バルサ2試合は通常の優先ソートで上位表示
 - 公式未発表の第2・第3試合の正確なKO時刻は捏造せず「第2試合 / 第3試合」で表示
+
+## V1.8 Predicted → Official lineups
+- SportMonks Expected Lineups対応のフロント実装
+- 予想スタメン/正式スタメンの表示切替
+- formation_fieldからピッチ上に選手を配置
+- 選手タップで個人スタッツ表示
+- Cloudflare Workerテンプレート追加（API tokenをGitHub Pagesに露出しない）
+- FotMobは規約上スクレイピングせず、データ基盤は利用条件が明確なAPIを使用

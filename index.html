@@ -198,6 +198,26 @@
     .statBox{background:#0b111a;border-radius:12px;padding:10px}
     .statBox small{display:block;color:#8f9aa7;font-size:9px}.statBox b{font-size:15px}
 
+
+    .lineupBadge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;
+      font-size:9px;font-weight:950;margin-left:6px}
+    .lineupBadge.predicted{background:#6f5600;color:#ffe889}
+    .lineupBadge.official{background:#0f5f3a;color:#a7ffd0}
+    .lineupBadge.live{background:#7f1730;color:#fff}
+    .formationLabel{text-align:center;font-size:11px;font-weight:900;color:#d8e1ea;margin:7px 0}
+    .playerDot.predicted button{border-style:dashed;background:#151922;color:#ffe889}
+    .playerDot.official button{background:#071d37;color:#edbb00}
+    .playerDot .num{font-size:8px;color:#fff;opacity:.85}
+    .playerSheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);
+      width:min(560px,100%);background:#0d131c;border:1px solid var(--line);
+      border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));
+      z-index:80;transition:.25s;box-shadow:0 -20px 60px rgba(0,0,0,.45)}
+    .playerSheet.show{transform:translate(-50%,0)}
+    .sheetTop{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .sheetClose{border:0;background:#192330;color:#fff;width:36px;height:36px;border-radius:12px}
+    .apiNote{background:#141c27;border:1px dashed #334457;border-radius:14px;padding:11px 12px;
+      color:#9aa7b6;font-size:11px;line-height:1.55;margin-top:10px}
+
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
   </style>
 </head>
@@ -271,6 +291,10 @@
   </section>
 </div>
 
+<div class="playerSheet" id="playerSheet">
+  <div class="sheetTop"><div><div id="sheetPlayer" style="font-weight:950;font-size:17px"></div><div id="sheetTeam" style="color:#9aa7b6;font-size:11px;margin-top:3px"></div></div><button class="sheetClose" id="sheetClose">×</button></div>
+  <div class="statsGrid" id="sheetStats" style="margin-top:14px"></div>
+</div>
 <nav class="bottom">
   <button class="nav active" data-view="home"><b>⌂</b>ホーム</button>
   <button class="nav" data-view="matches"><b>▤</b>試合</button>
@@ -300,6 +324,9 @@ const X_SOURCES = {
     {name:'Fabrizio Romano', handle:'FabrizioRomano', role:'TRANSFER NEWS'}
   ]
 };
+
+
+const ENHANCED_API_BASE = localStorage.getItem('footballNowApiBase') || '';
 
 let state = {
   category:'all',
@@ -700,41 +727,141 @@ async function loadMatches(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     const api=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
-    matchCache=mergeAllFixtures(api);
+    const dates=[-1,0,1].map(off=>{const x=new Date();x.setDate(x.getDate()+off);return localDateKey(x);});
+    const enhanced=(await Promise.all(dates.map(fetchEnhancedFixtures))).flat();
+    matchCache=mergeAllFixtures([...api,...enhanced]);
     renderMatches();
   }catch(e){
-    matchCache=mergeAllFixtures([]);
+    const dates=[-1,0,1].map(off=>{const x=new Date();x.setDate(x.getDate()+off);return localDateKey(x);});
+    const enhanced=(await Promise.all(dates.map(fetchEnhancedFixtures))).flat();
+    matchCache=mergeAllFixtures(enhanced);
     renderMatches();
   }
 }
 
+function extractLineupObjects(m){
+  const expected = m.expectedlineups || m.expectedLineups || m.expected_lineups || [];
+  const official = m.lineups || m.lineup || [];
+  const confirmed = Boolean(m.lineup_confirmed || m.lineupConfirmed || official.length);
+  return {expected:Array.isArray(expected)?expected:[], official:Array.isArray(official)?official:[], confirmed};
+}
+function normalizeLineupPlayer(x, kind='official'){
+  const p=x.player||x;
+  const grid=x.formation_field||x.grid||p.grid||null;
+  const teamId=x.team_id||x.team?.id||p.team_id||null;
+  return {
+    id:p.id||x.player_id||p.player_id||null,
+    name:p.display_name||p.name||x.player_name||p.player_name||'Player',
+    number:p.jersey_number||p.number||x.jersey_number||'',
+    grid,
+    teamId,
+    position:p.position?.name||p.position||p.pos||x.position_name||'',
+    stats:x.statistics||x.stats||p.statistics||p.stats||{},
+    kind
+  };
+}
+function gridToXY(grid, isAway=false){
+  if(!grid || !String(grid).includes(':')) return null;
+  const [rowRaw,colRaw]=String(grid).split(':').map(Number);
+  if(!rowRaw || !colRaw) return null;
+  const row=Math.max(1,Math.min(5,rowRaw));
+  const colsByRow={1:1,2:5,3:5,4:5,5:3};
+  const cols=colsByRow[row]||5;
+  const col=Math.max(1,Math.min(cols,colRaw));
+  const x=(col/(cols+1))*100;
+  let y=12 + (row-1)*9.5;
+  if(isAway) y=100-y;
+  return {x,y};
+}
 function renderLineupPitch(m){
-  const lineup=m.lineup||m.lineups||null;
-  if(!lineup) return `<div class="pitch"><div class="lineupEmpty">スタメン未発表<br><small style="font-weight:600">ラインナップ取得後、ここにピッチ配置で表示します</small></div></div>`;
-  return `<div class="pitch"><div class="lineupEmpty">ラインナップデータを取得しました</div></div>`;
+  const {expected,official,confirmed}=extractLineupObjects(m);
+  const source=confirmed && official.length ? official : expected;
+  const kind=confirmed && official.length ? 'official':'predicted';
+  if(!source.length){
+    return `<div class="pitch"><div class="lineupEmpty">予想スタメン未取得<br><small style="font-weight:600">データAPI接続後は、予想 → 正式発表へ自動切替します</small></div></div>
+      ${ENHANCED_API_BASE?'':'<div class="apiNote">いまはGitHub Pagesだけなので、スタメンの自動取得用バックエンドが未接続です。ZIP内の <b>worker.js</b> を接続すると予想・正式スタメン・選手スタッツを取得できます。</div>'}`;
+  }
+  const teams=matchTeams(m);
+  const participants=m.participants||[];
+  const homeId=m.home_team?.id||m.homeTeam?.id||participants.find(x=>x.meta?.location==='home')?.id||null;
+  const awayId=m.away_team?.id||m.awayTeam?.id||participants.find(x=>x.meta?.location==='away')?.id||null;
+  const players=source.map(x=>normalizeLineupPlayer(x,kind));
+  const starters=players.filter((p,i)=>{
+    const raw=source[i];
+    const type=raw.type_id||raw.type||raw.lineup_type;
+    if(kind==='predicted') return type===77614 || type==='starter' || raw.formation_position!=null || raw.formation_field;
+    return raw.type_id===11 || raw.type==='startXI' || raw.type==='starter' || raw.formation_field || raw.formation_position!=null;
+  }).slice(0,22);
+  const points=starters.map((pl,i)=>{
+    const isAway=awayId ? String(pl.teamId)===String(awayId) : i>=11;
+    const pos=gridToXY(pl.grid,isAway);
+    if(!pos) return '';
+    const safeStats=encodeURIComponent(JSON.stringify(pl.stats||{}));
+    return `<div class="playerDot ${kind}" style="left:${pos.x}%;top:${pos.y}%">
+      <button data-player="${escapeHTML(pl.name)}" data-team="${escapeHTML(isAway?teams.away:teams.home)}" data-stats="${safeStats}">
+        ${pl.number||'•'}
+      </button>
+      <span>${escapeHTML(pl.name.split(' ').slice(-1)[0])}</span>
+    </div>`;
+  }).join('');
+  const badge=kind==='official'
+    ? '<span class="lineupBadge official">✓ 正式スタメン</span>'
+    : '<span class="lineupBadge predicted">予想スタメン</span>';
+  return `<div class="formationLabel">${badge}</div><div class="pitch">${points||'<div class="lineupEmpty">配置データを取得中</div>'}</div>`;
+}
+function openPlayerSheet(name,team,stats){
+  document.getElementById('sheetPlayer').textContent=name;
+  document.getElementById('sheetTeam').textContent=team;
+  const keys=[
+    ['minutes','出場時間'],['rating','評価'],['goals','ゴール'],['assists','アシスト'],
+    ['shots','シュート'],['shots_on_target','枠内シュート'],['passes','パス'],
+    ['accurate_passes_percentage','パス成功率'],['key_passes','キーパス'],
+    ['tackles','タックル'],['interceptions','インターセプト']
+  ];
+  const flat=stats&&typeof stats==='object'?stats:{};
+  const boxes=keys.filter(([k])=>flat[k]!=null).map(([k,label])=>`<div class="statBox"><small>${label}</small><b>${escapeHTML(String(flat[k]))}</b></div>`).join('');
+  document.getElementById('sheetStats').innerHTML=boxes||'<div class="apiNote" style="grid-column:1/-1;margin:0">この選手の試合スタッツはまだ取得されていません。</div>';
+  document.getElementById('playerSheet').classList.add('show');
 }
 function openMatchDetail(index){
   const m=matchCache[index]; if(!m) return;
   const t=matchTeams(m), d=matchDate(m), hs=scoreValue(m,'home'), as=scoreValue(m,'away');
   document.getElementById('matchesPage').classList.remove('show');
   document.getElementById('matchDetail').classList.add('show');
-  const comp=m.competition?.name||m.competition||'FOOTBALL';
+  const comp=m.competition?.name||m.competition||m.league?.name||m.league||'FOOTBALL';
+  const {expected,official,confirmed}=extractLineupObjects(m);
+  const lineupState=confirmed&&official.length?'✓ 正式スタメン':expected.length?'予想スタメン':'スタメン情報待ち';
   document.getElementById('detailContent').innerHTML=`
     <div class="detailScore">
       <div style="font-size:10px;color:#9aa7b6;margin-bottom:12px">${escapeHTML(String(comp))}${m.friendly?' ・ FRIENDLY':''}${m.special?' ・ '+escapeHTML(m.special):''}</div>
       <div class="detailTeams"><strong>${escapeHTML(t.home)}</strong><div class="${hs!==''||as!==''?'score':'kickoff'}">${hs!==''||as!==''?`${hs||0} - ${as||0}`:(m.display_time|| (d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'))}</div><strong>${escapeHTML(t.away)}</strong></div>
+      <div style="font-size:10px;color:#9aa7b6;margin-top:10px">${lineupState}</div>
     </div>
     <h3 style="margin:12px 2px 8px">スターティングメンバー</h3>
     ${renderLineupPitch(m)}
     <div class="statsPanel">
       <h3>選手スタッツ</h3>
-      <div style="color:#8f9aa7;font-size:12px;line-height:1.6">スタメン発表後、選手をタップすると出場時間・ゴール・アシスト・シュート・パス成功率などをここに表示できるようにする。</div>
+      <div style="color:#8f9aa7;font-size:12px;line-height:1.6">ピッチ上の選手をタップすると、その試合の個人スタッツを表示します。</div>
     </div>`;
+  document.querySelectorAll('#detailContent .playerDot button').forEach(btn=>btn.addEventListener('click',()=>{
+    let st={}; try{st=JSON.parse(decodeURIComponent(btn.dataset.stats||'%7B%7D'));}catch{}
+    openPlayerSheet(btn.dataset.player,btn.dataset.team,st);
+  }));
+}
+async function fetchEnhancedFixtures(dateKey){
+  if(!ENHANCED_API_BASE) return [];
+  try{
+    const r=await fetch(`${ENHANCED_API_BASE.replace(/\/$/,'')}/fixtures?date=${encodeURIComponent(dateKey)}`,{cache:'no-store'});
+    if(!r.ok) return [];
+    const d=await r.json();
+    return Array.isArray(d.data)?d.data:(Array.isArray(d)?d:[]);
+  }catch{return [];}
 }
 document.getElementById('matchesFeed').addEventListener('click',e=>{
   const card=e.target.closest('.matchCard'); if(!card) return;
   openMatchDetail(Number(card.dataset.matchIndex));
 });
+document.getElementById('sheetClose').addEventListener('click',()=>document.getElementById('playerSheet').classList.remove('show'));
 document.getElementById('backToMatches').addEventListener('click',()=>{
   document.getElementById('matchDetail').classList.remove('show');
   document.getElementById('matchesPage').classList.add('show');
