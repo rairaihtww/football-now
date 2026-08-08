@@ -1,53 +1,425 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f14">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Football Now">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<title>Football Now</title>
-<style>
-:root{--bg:#0b0f14;--card:#121821;--card2:#171f2a;--text:#f4f7fb;--muted:#9aa7b6;--accent:#32d583;--line:#22303d;--chip:#1b2632}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
-body{padding-top:env(safe-area-inset-top);padding-bottom:calc(74px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#081018 0%,#0b0f14 45%)}
-.app{max-width:520px;margin:0 auto;min-height:100vh}
-header{position:sticky;top:env(safe-area-inset-top);z-index:10;background:rgba(11,15,20,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px}.brand{font-weight:900;letter-spacing:.3px;font-size:20px}.brand span{color:var(--accent)}
-.iconbtn{width:40px;height:40px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:white;font-size:18px}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 14px 12px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{border:none;white-space:nowrap;padding:9px 13px;border-radius:999px;background:var(--chip);color:#c7d0da;font-weight:700}.chip.active{background:var(--accent);color:#042014}
-.hero{margin:16px;border-radius:22px;overflow:hidden;position:relative;min-height:240px;background:radial-gradient(circle at 25% 15%,rgba(50,213,131,.35),transparent 30%),linear-gradient(145deg,#162433,#0c1118 65%);box-shadow:0 16px 42px rgba(0,0,0,.28)}
-.hero:after{content:"⚽";position:absolute;right:18px;top:18px;font-size:78px;opacity:.16;transform:rotate(-12deg)}.hero-content{position:absolute;left:18px;right:18px;bottom:18px}.badge{display:inline-block;background:var(--accent);color:#042014;font-size:12px;font-weight:900;padding:6px 9px;border-radius:8px;margin-bottom:10px}.hero h1{font-size:26px;line-height:1.15;margin:0 0 9px}.meta{font-size:12px;color:#c8d0d9}
-.section-title{display:flex;justify-content:space-between;align-items:center;padding:4px 18px 10px}.section-title h2{font-size:18px;margin:0}.section-title span{font-size:12px;color:var(--muted)}.feed{padding:0 14px}
-.news{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:10px}.thumb{height:82px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:36px;background:linear-gradient(145deg,#1d2a37,#111821)}.tag{font-size:11px;color:var(--accent);font-weight:800;margin-bottom:5px}.news h3{font-size:15px;line-height:1.35;margin:0 0 8px}.news p{font-size:11px;color:var(--muted);margin:0}.empty{display:none;text-align:center;color:var(--muted);padding:30px}.search{margin:14px 16px 0;display:none}.search input{width:100%;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:white;outline:none;font-size:15px}
-.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);height:calc(72px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(12,17,24,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);z-index:20}.nav{border:0;background:none;color:#8c99a7;font-size:11px;font-weight:700}.nav b{display:block;font-size:20px;margin-bottom:2px}.nav.active{color:var(--accent)}
-.install{margin:0 16px 16px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);font-size:13px;color:#cdd6df;display:none}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081018">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Football Now">
+  <meta name="description" content="サッカーニュースをすばやくチェックできるPWA">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-180.png">
+  <link rel="icon" href="./icon-180.png">
+  <title>Football Now</title>
+  <style>
+    :root{
+      --bg:#081018;--bg2:#0b0f14;--card:#121821;--card2:#171f2a;
+      --text:#f4f7fb;--muted:#9aa7b6;--accent:#32d583;--line:#22303d;
+      --chip:#1b2632;--danger:#ff6b6b;--shadow:0 14px 38px rgba(0,0,0,.25)
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html{background:var(--bg2)}
+    body{
+      margin:0;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 42%);
+      color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+      padding-top:env(safe-area-inset-top);padding-bottom:calc(82px + env(safe-area-inset-bottom))
+    }
+    button,input{font:inherit}.app{max-width:560px;margin:0 auto;min-height:100vh}
+    header{
+      position:sticky;top:env(safe-area-inset-top);z-index:30;
+      background:rgba(11,15,20,.9);backdrop-filter:blur(18px);
+      border-bottom:1px solid rgba(255,255,255,.06)
+    }
+    .topbar{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+    .brand{font-size:20px;font-weight:950;letter-spacing:.35px;flex:1}
+    .brand span{color:var(--accent)}
+    .iconbtn{
+      width:42px;height:42px;border:1px solid var(--line);border-radius:14px;
+      background:var(--card);color:#fff;font-size:18px;display:grid;place-items:center
+    }
+    .iconbtn:active,.chip:active,.nav:active,.refresh:active{transform:scale(.96)}
+    .search{padding:0 16px 10px;display:none}
+    .search.open{display:block}
+    .search input{
+      width:100%;padding:13px 15px;border-radius:14px;border:1px solid var(--line);
+      background:var(--card2);color:white;outline:none;font-size:15px
+    }
+    .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 14px 12px;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{
+      border:0;white-space:nowrap;padding:9px 13px;border-radius:999px;
+      background:var(--chip);color:#c7d0da;font-weight:800
+    }
+    .chip.active{background:var(--accent);color:#042014}
+    .hero{
+      margin:16px;border-radius:24px;min-height:218px;overflow:hidden;position:relative;
+      background:
+        radial-gradient(circle at 20% 12%,rgba(50,213,131,.38),transparent 28%),
+        linear-gradient(145deg,#172a3b,#0b1017 70%);
+      box-shadow:var(--shadow)
+    }
+    .hero::after{
+      content:"⚽";position:absolute;right:10px;top:6px;font-size:106px;opacity:.12;
+      transform:rotate(-14deg)
+    }
+    .hero-content{position:absolute;left:18px;right:18px;bottom:18px;z-index:2}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#042014;
+      font-size:11px;font-weight:950;padding:6px 9px;border-radius:8px;margin-bottom:9px
+    }
+    .hero h1{font-size:25px;line-height:1.17;margin:0 0 8px}
+    .hero p{font-size:12px;line-height:1.55;color:#d3dbe3;margin:0}
+    .status{
+      margin:0 16px 12px;padding:11px 13px;border:1px solid var(--line);
+      border-radius:15px;background:rgba(18,24,33,.8);color:var(--muted);
+      font-size:12px;display:flex;align-items:center;gap:8px
+    }
+    .status .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;padding:2px 18px 11px}
+    .toolbar h2{font-size:18px;margin:0}
+    .toolbar-right{display:flex;align-items:center;gap:10px}
+    #count{font-size:12px;color:var(--muted)}
+    .refresh{
+      border:0;background:transparent;color:var(--accent);font-weight:850;padding:5px
+    }
+    .feed{padding:0 14px}
+    .news{
+      display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;
+      padding:11px;background:var(--card);border:1px solid var(--line);
+      border-radius:19px;margin-bottom:10px;box-shadow:0 7px 20px rgba(0,0,0,.12);
+      position:relative
+    }
+    .thumb{
+      height:92px;border-radius:14px;overflow:hidden;background:
+      linear-gradient(145deg,#1d2a37,#111821);position:relative
+    }
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb-fallback{width:100%;height:100%;display:grid;place-items:center;font-size:34px}
+    .tag{font-size:10px;color:var(--accent);font-weight:900;letter-spacing:.25px;margin-bottom:5px}
+    .news h3{font-size:14px;line-height:1.4;margin:0 28px 7px 0}
+    .news .meta{font-size:10.5px;color:var(--muted);line-height:1.4}
+    .fav{
+      position:absolute;right:9px;top:9px;width:32px;height:32px;border-radius:11px;
+      border:1px solid var(--line);background:rgba(8,16,24,.82);color:#ccd5de;font-size:18px
+    }
+    .fav.on{color:#ffd34e}
+    .empty{text-align:center;color:var(--muted);padding:46px 20px 80px;display:none}
+    .empty b{display:block;color:white;font-size:18px;margin-bottom:7px}
+    .skeleton{
+      display:grid;grid-template-columns:104px 1fr;gap:12px;padding:11px;background:var(--card);
+      border:1px solid var(--line);border-radius:19px;margin-bottom:10px
+    }
+    .sk{background:linear-gradient(90deg,#18212c,#212c38,#18212c);background-size:200% 100%;
+      animation:shimmer 1.2s infinite;border-radius:10px}
+    @keyframes shimmer{to{background-position:-200% 0}}
+    .sk.img{height:92px}.sk.line{height:12px;margin:8px 0}.sk.line.short{width:54%}
+    .bottom{
+      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+      width:min(560px,100%);height:calc(74px + env(safe-area-inset-bottom));
+      padding-bottom:env(safe-area-inset-bottom);background:rgba(12,17,24,.96);
+      backdrop-filter:blur(18px);border-top:1px solid var(--line);
+      display:grid;grid-template-columns:repeat(4,1fr);z-index:40
+    }
+    .nav{border:0;background:none;color:#8c99a7;font-size:10px;font-weight:800}
+    .nav b{display:block;font-size:20px;margin-bottom:2px}
+    .nav.active{color:var(--accent)}
+    .toast{
+      position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));
+      transform:translateX(-50%) translateY(12px);background:#f3f7fa;color:#081018;
+      padding:10px 14px;border-radius:999px;font-size:12px;font-weight:850;
+      opacity:0;pointer-events:none;transition:.22s;z-index:60;white-space:nowrap
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+  </style>
 </head>
 <body>
 <div class="app">
-<header><div class="topbar"><div class="brand">FOOTBALL <span>NOW</span></div><button class="iconbtn" id="searchBtn">⌕</button></div><div class="search" id="searchBox"><input id="searchInput" placeholder="チーム名・選手名で検索"></div><div class="chips"><button class="chip active" data-cat="all">おすすめ</button><button class="chip" data-cat="barca">バルセロナ</button><button class="chip" data-cat="transfer">移籍</button><button class="chip" data-cat="jleague">Jリーグ</button><button class="chip" data-cat="europe">欧州</button><button class="chip" data-cat="national">日本代表</button></div></header>
-<section class="hero"><div class="hero-content"><span class="badge">TOP STORY</span><h1>今日のサッカーを、ひとつの画面で。</h1><div class="meta">クラブ・移籍・試合・代表ニュースをまとめてチェック</div></div></section>
-<div class="install" id="installHint">Safariの共有ボタン →「ホーム画面に追加」でアプリのように使えます。</div>
-<div class="section-title"><h2>最新ニュース</h2><span id="count">6件</span></div>
-<main class="feed" id="feed">
-<article class="news" data-cat="barca europe" data-text="バルセロナ 中盤 試合 戦術"><div class="thumb">🔵🔴</div><div><div class="tag">BARCELONA</div><h3>バルサの中盤構成をチェック。今季の注目ポイントは？</h3><p>5分前 ・ 3分で読める</p></div></article>
-<article class="news" data-cat="transfer europe" data-text="移籍 市場 欧州 選手"><div class="thumb">🔄</div><div><div class="tag">TRANSFER</div><h3>移籍市場の最新動向。欧州主要クラブの補強状況まとめ</h3><p>18分前 ・ 4分で読める</p></div></article>
-<article class="news" data-cat="jleague" data-text="Jリーグ ファジアーノ 岡山 試合"><div class="thumb">🇯🇵</div><div><div class="tag">J.LEAGUE</div><h3>Jリーグ最新情報。今節の見どころと注目カード</h3><p>31分前 ・ 2分で読める</p></div></article>
-<article class="news" data-cat="national" data-text="日本代表 サッカー メンバー"><div class="thumb">⚽</div><div><div class="tag">JAPAN</div><h3>日本代表、次戦へ向けたメンバー争いを整理</h3><p>1時間前 ・ 3分で読める</p></div></article>
-<article class="news" data-cat="europe" data-text="プレミアリーグ 欧州 試合"><div class="thumb">🏟️</div><div><div class="tag">EUROPE</div><h3>欧州リーグの注目カードを一気に確認</h3><p>2時間前 ・ 5分で読める</p></div></article>
-<article class="news" data-cat="barca transfer" data-text="バルセロナ 移籍 補強"><div class="thumb">⭐</div><div><div class="tag">RUMORS</div><h3>バルセロナの補強候補をポジション別に見る</h3><p>3時間前 ・ 4分で読める</p></div></article>
-</main><div class="empty" id="empty">該当するニュースがありません</div></div>
-<nav class="bottom"><button class="nav active"><b>⌂</b>ホーム</button><button class="nav"><b>▤</b>試合</button><button class="nav"><b>☆</b>お気に入り</button><button class="nav"><b>⚙</b>設定</button></nav>
+  <header>
+    <div class="topbar">
+      <div class="brand">FOOTBALL <span>NOW</span></div>
+      <button class="iconbtn" id="searchBtn" aria-label="検索">⌕</button>
+    </div>
+    <div class="search" id="searchBox">
+      <input id="searchInput" type="search" placeholder="チーム名・選手名・大会名で検索">
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip active" data-cat="all">おすすめ</button>
+      <button class="chip" data-cat="barca">バルセロナ</button>
+      <button class="chip" data-cat="transfer">移籍</button>
+      <button class="chip" data-cat="jleague">Jリーグ</button>
+      <button class="chip" data-cat="europe">欧州</button>
+      <button class="chip" data-cat="national">日本代表</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <span class="badge">● LIVE FEED</span>
+      <h1>今日のサッカーを、ここだけで。</h1>
+      <p>海外・Jリーグ・日本代表・移籍情報をまとめてチェック。</p>
+    </div>
+  </section>
+
+  <div class="status"><span class="dot"></span><span id="statusText">ニュースを取得しています…</span></div>
+
+  <div class="toolbar">
+    <h2 id="sectionTitle">最新ニュース</h2>
+    <div class="toolbar-right">
+      <span id="count">0件</span>
+      <button class="refresh" id="refreshBtn">↻ 更新</button>
+    </div>
+  </div>
+
+  <main class="feed" id="feed"></main>
+  <div class="empty" id="empty"><b>ニュースが見つかりません</b>カテゴリーや検索ワードを変えてみてください。</div>
+</div>
+
+<nav class="bottom">
+  <button class="nav active" data-view="home"><b>⌂</b>ホーム</button>
+  <button class="nav" data-view="matches"><b>▤</b>試合</button>
+  <button class="nav" data-view="favorites"><b>★</b>お気に入り</button>
+  <button class="nav" data-view="settings"><b>⚙</b>設定</button>
+</nav>
+<div class="toast" id="toast"></div>
+
 <script>
-const chips=[...document.querySelectorAll('.chip')],items=[...document.querySelectorAll('.news')],count=document.getElementById('count'),empty=document.getElementById('empty'),searchBtn=document.getElementById('searchBtn'),searchBox=document.getElementById('searchBox'),searchInput=document.getElementById('searchInput');let category='all';
-function filter(){const q=searchInput.value.trim().toLowerCase();let shown=0;items.forEach(item=>{const cats=item.dataset.cat.split(' '),catOK=category==='all'||cats.includes(category),qOK=!q||item.innerText.toLowerCase().includes(q)||item.dataset.text.toLowerCase().includes(q),ok=catOK&&qOK;item.style.display=ok?'grid':'none';if(ok)shown++});count.textContent=shown+'件';empty.style.display=shown?'none':'block'}
-chips.forEach(c=>c.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));c.classList.add('active');category=c.dataset.cat;filter()}));searchBtn.addEventListener('click',()=>{searchBox.style.display=searchBox.style.display==='block'?'none':'block';if(searchBox.style.display==='block')searchInput.focus()});searchInput.addEventListener('input',filter);document.querySelectorAll('.nav').forEach(n=>n.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));n.classList.add('active')}));
-if(!window.navigator.standalone)document.getElementById('installHint').style.display='block';
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+const QUERIES = {
+  all: 'サッカー OR football',
+  barca: 'FCバルセロナ OR Barcelona サッカー',
+  transfer: 'サッカー 移籍 OR transfer football',
+  jleague: 'Jリーグ サッカー',
+  europe: '欧州サッカー プレミア ラリーガ セリエA ブンデスリーガ',
+  national: 'サッカー 日本代表'
+};
+
+let state = {
+  category:'all',
+  view:'home',
+  articles:[],
+  query:'',
+  loading:false
+};
+
+const $ = s => document.querySelector(s);
+const feed = $('#feed');
+const empty = $('#empty');
+const count = $('#count');
+const statusText = $('#statusText');
+const sectionTitle = $('#sectionTitle');
+const searchBox = $('#searchBox');
+const searchInput = $('#searchInput');
+const toast = $('#toast');
+
+function escapeHTML(s=''){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function timeAgo(dateStr){
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  const sec = Math.max(0, (Date.now()-d.getTime())/1000);
+  if(sec < 60) return 'たった今';
+  if(sec < 3600) return Math.floor(sec/60)+'分前';
+  if(sec < 86400) return Math.floor(sec/3600)+'時間前';
+  return Math.floor(sec/86400)+'日前';
+}
+
+function sourceName(item){
+  if(item.author && item.author.trim()) return item.author.replace(/<[^>]+>/g,'').slice(0,28);
+  try { return new URL(item.link).hostname.replace(/^www\./,''); } catch { return 'NEWS'; }
+}
+
+function articleId(a){
+  let h=0, s=(a.link||a.title||'');
+  for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0;
+  return 'a'+Math.abs(h);
+}
+
+function getFavorites(){
+  try { return JSON.parse(localStorage.getItem('footballNowFavorites')||'[]'); } catch { return []; }
+}
+function setFavorites(arr){ localStorage.setItem('footballNowFavorites',JSON.stringify(arr)); }
+function isFavorite(a){ return getFavorites().some(x=>x.id===articleId(a)); }
+
+function showToast(msg){
+  toast.textContent=msg; toast.classList.add('show');
+  clearTimeout(showToast.t); showToast.t=setTimeout(()=>toast.classList.remove('show'),1500);
+}
+
+function skeletons(){
+  feed.innerHTML = Array.from({length:5},()=>`
+    <div class="skeleton"><div class="sk img"></div><div>
+      <div class="sk line short"></div><div class="sk line"></div>
+      <div class="sk line"></div><div class="sk line short"></div>
+    </div></div>`).join('');
+  empty.style.display='none';
+}
+
+function normalizeItems(data){
+  const items = Array.isArray(data.items) ? data.items : [];
+  return items.map(x=>({
+    title:(x.title||'').replace(/\s*-\s*[^-]+$/,'').trim(),
+    link:x.link||x.guid||'#',
+    pubDate:x.pubDate||x.published||'',
+    author:x.author||'',
+    thumbnail:x.thumbnail||x.enclosure?.link||'',
+    description:(x.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
+  })).filter(x=>x.title && x.link && x.link!=='#');
+}
+
+async function fetchViaRss2Json(rssUrl){
+  const url='https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(rssUrl);
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('rss2json '+r.status);
+  const d=await r.json();
+  if(d.status && d.status!=='ok') throw new Error('rss2json failed');
+  return normalizeItems(d);
+}
+
+async function fetchViaAllOrigins(rssUrl){
+  const url='https://api.allorigins.win/raw?url='+encodeURIComponent(rssUrl);
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('allorigins '+r.status);
+  const xml=await r.text();
+  const doc=new DOMParser().parseFromString(xml,'text/xml');
+  return [...doc.querySelectorAll('item')].map(item=>({
+    title:item.querySelector('title')?.textContent?.trim()||'',
+    link:item.querySelector('link')?.textContent?.trim()||'',
+    pubDate:item.querySelector('pubDate')?.textContent||'',
+    author:item.querySelector('source')?.textContent||'',
+    thumbnail:'',
+    description:item.querySelector('description')?.textContent?.replace(/<[^>]*>/g,' ')||''
+  })).filter(x=>x.title&&x.link);
+}
+
+async function loadNews(force=false){
+  if(state.loading) return;
+  state.loading=true;
+  skeletons();
+  statusText.textContent='最新ニュースを取得しています…';
+  const q=QUERIES[state.category] || QUERIES.all;
+  const rss='https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=ja&gl=JP&ceid=JP:ja';
+
+  let items=[], mode='';
+  try{
+    items=await fetchViaRss2Json(rss); mode='LIVE';
+  }catch(e1){
+    try{ items=await fetchViaAllOrigins(rss); mode='LIVE'; }
+    catch(e2){
+      const cached=localStorage.getItem('footballNowCache:'+state.category);
+      if(cached){
+        try{ items=JSON.parse(cached); mode='CACHE'; }catch{}
+      }
+    }
+  }
+
+  if(items.length){
+    state.articles=items.slice(0,30);
+    localStorage.setItem('footballNowCache:'+state.category, JSON.stringify(state.articles));
+    statusText.textContent = mode==='CACHE'
+      ? '通信できないため、前回取得したニュースを表示中'
+      : '最新ニュースを表示中 ・ '+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'更新';
+  }else{
+    state.articles=[];
+    statusText.textContent='ニュースを取得できませんでした。時間をおいて「更新」を押してください。';
+  }
+  state.loading=false;
+  render();
+}
+
+function currentArticles(){
+  if(state.view==='favorites'){
+    const favs=getFavorites();
+    return favs.map(f=>f.article);
+  }
+  return state.articles;
+}
+
+function render(){
+  let list=currentArticles();
+  const q=state.query.trim().toLowerCase();
+  if(q) list=list.filter(a=>(a.title+' '+a.description+' '+a.author).toLowerCase().includes(q));
+
+  count.textContent=list.length+'件';
+  empty.style.display=list.length?'none':'block';
+
+  if(state.view==='favorites') sectionTitle.textContent='お気に入り';
+  else sectionTitle.textContent='最新ニュース';
+
+  feed.innerHTML=list.map((a,i)=>{
+    const fav=isFavorite(a);
+    const img=a.thumbnail
+      ? `<img src="${escapeHTML(a.thumbnail)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;thumb-fallback&quot;>⚽</div>'">`
+      : `<div class="thumb-fallback">${state.category==='barca'?'🔵🔴':'⚽'}</div>`;
+    return `
+      <article class="news" data-index="${i}" data-link="${escapeHTML(a.link)}">
+        <div class="thumb">${img}</div>
+        <div>
+          <div class="tag">${escapeHTML(sourceName(a).toUpperCase())}</div>
+          <h3>${escapeHTML(a.title)}</h3>
+          <div class="meta">${escapeHTML(timeAgo(a.pubDate))}${a.pubDate?' ・ ':''}${escapeHTML(sourceName(a))}</div>
+        </div>
+        <button class="fav ${fav?'on':''}" data-fav="${escapeHTML(articleId(a))}" aria-label="お気に入り">${fav?'★':'☆'}</button>
+      </article>`;
+  }).join('');
+}
+
+feed.addEventListener('click',e=>{
+  const favBtn=e.target.closest('.fav');
+  const card=e.target.closest('.news');
+  if(!card) return;
+
+  const list=currentArticles();
+  const q=state.query.trim().toLowerCase();
+  const visible=q?list.filter(a=>(a.title+' '+a.description+' '+a.author).toLowerCase().includes(q)):list;
+  const a=visible[Number(card.dataset.index)];
+  if(!a) return;
+
+  if(favBtn){
+    e.preventDefault();e.stopPropagation();
+    let favs=getFavorites(), id=articleId(a);
+    const exists=favs.findIndex(x=>x.id===id);
+    if(exists>=0){favs.splice(exists,1);showToast('お気に入りから削除');}
+    else{favs.unshift({id,article:a});showToast('お気に入りに追加');}
+    setFavorites(favs);render();return;
+  }
+  window.open(a.link,'_blank','noopener,noreferrer');
+});
+
+$('#searchBtn').addEventListener('click',()=>{
+  searchBox.classList.toggle('open');
+  if(searchBox.classList.contains('open')) searchInput.focus();
+});
+searchInput.addEventListener('input',()=>{state.query=searchInput.value;render()});
+
+document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  chip.classList.add('active');
+  state.category=chip.dataset.cat;state.view='home';
+  document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view==='home'));
+  loadNews(true);
+}));
+
+document.querySelectorAll('.nav').forEach(nav=>nav.addEventListener('click',()=>{
+  const view=nav.dataset.view;
+  if(view==='matches'){showToast('試合ページはV2で追加予定');return;}
+  if(view==='settings'){showToast('設定ページはV2で追加予定');return;}
+  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
+  nav.classList.add('active');
+  state.view=view;
+  if(view==='home') render();
+  if(view==='favorites') render();
+}));
+
+$('#refreshBtn').addEventListener('click',()=>loadNews(true));
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+loadNews();
 </script>
-</body></html>
+</body>
+</html>
