@@ -1,10 +1,11 @@
-const CACHE = 'football-now-v1.1.0';
+const CACHE = 'football-now-v1.2.0';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-180.png',
-  './icon-512.png'
+  './icon-512.png',
+  './busquets-bg.png'
 ];
 
 self.addEventListener('install', event => {

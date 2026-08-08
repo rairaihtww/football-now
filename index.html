@@ -15,13 +15,13 @@
   <style>
     :root{
       --bg:#081018;--bg2:#0b0f14;--card:#121821;--card2:#171f2a;
-      --text:#f4f7fb;--muted:#9aa7b6;--accent:#32d583;--line:#22303d;
+      --text:#f4f7fb;--muted:#9aa7b6;--accent:#2f6bff;--barca-red:#a50044;--barca-blue:#004d98;--gold:#edbb00;--line:#22303d;
       --chip:#1b2632;--danger:#ff6b6b;--shadow:0 14px 38px rgba(0,0,0,.25)
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html{background:var(--bg2)}
     body{
-      margin:0;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 42%);
+      margin:0;background:linear-gradient(180deg,#07142c 0%,#090d18 45%,#0b0f14 100%);
       color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
       padding-top:env(safe-area-inset-top);padding-bottom:calc(82px + env(safe-area-inset-bottom))
     }
@@ -33,7 +33,7 @@
     }
     .topbar{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
     .brand{font-size:20px;font-weight:950;letter-spacing:.35px;flex:1}
-    .brand span{color:var(--accent)}
+    .brand span{color:#edbb00}
     .iconbtn{
       width:42px;height:42px;border:1px solid var(--line);border-radius:14px;
       background:var(--card);color:#fff;font-size:18px;display:grid;place-items:center
@@ -51,21 +51,23 @@
       border:0;white-space:nowrap;padding:9px 13px;border-radius:999px;
       background:var(--chip);color:#c7d0da;font-weight:800
     }
-    .chip.active{background:var(--accent);color:#042014}
+    .chip.active{background:linear-gradient(90deg,#004d98,#a50044);color:#fff}
     .hero{
       margin:16px;border-radius:24px;min-height:218px;overflow:hidden;position:relative;
       background:
-        radial-gradient(circle at 20% 12%,rgba(50,213,131,.38),transparent 28%),
-        linear-gradient(145deg,#172a3b,#0b1017 70%);
-      box-shadow:var(--shadow)
+        linear-gradient(180deg,rgba(3,10,24,.08) 0%,rgba(3,10,24,.28) 45%,rgba(5,8,18,.92) 100%),
+        linear-gradient(90deg,rgba(0,77,152,.18),rgba(165,0,68,.18)),
+        url('./busquets-bg.png') center 23%/cover no-repeat;
+      box-shadow:var(--shadow);
+      min-height:310px
     }
     .hero::after{
-      content:"⚽";position:absolute;right:10px;top:6px;font-size:106px;opacity:.12;
+      content:"5";position:absolute;left:15px;top:10px;font-size:118px;font-weight:950;opacity:.10;
       transform:rotate(-14deg)
     }
     .hero-content{position:absolute;left:18px;right:18px;bottom:18px;z-index:2}
     .badge{
-      display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#042014;
+      display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#004d98,#a50044);color:#fff;
       font-size:11px;font-weight:950;padding:6px 9px;border-radius:8px;margin-bottom:9px
     }
     .hero h1{font-size:25px;line-height:1.17;margin:0 0 8px}
@@ -81,7 +83,7 @@
     .toolbar-right{display:flex;align-items:center;gap:10px}
     #count{font-size:12px;color:var(--muted)}
     .refresh{
-      border:0;background:transparent;color:var(--accent);font-weight:850;padding:5px
+      border:0;background:transparent;color:#edbb00;font-weight:850;padding:5px
     }
     .feed{padding:0 14px}
     .news{
@@ -96,7 +98,7 @@
     }
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .thumb-fallback{width:100%;height:100%;display:grid;place-items:center;font-size:34px}
-    .tag{font-size:10px;color:var(--accent);font-weight:900;letter-spacing:.25px;margin-bottom:5px}
+    .tag{font-size:10px;color:#edbb00;font-weight:900;letter-spacing:.25px;margin-bottom:5px}
     .news h3{font-size:14px;line-height:1.4;margin:0 28px 7px 0}
     .news .meta{font-size:10.5px;color:var(--muted);line-height:1.4}
     .fav{
@@ -123,7 +125,7 @@
     }
     .nav{border:0;background:none;color:#8c99a7;font-size:10px;font-weight:800}
     .nav b{display:block;font-size:20px;margin-bottom:2px}
-    .nav.active{color:var(--accent)}
+    .nav.active{color:#edbb00}
     .toast{
       position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));
       transform:translateX(-50%) translateY(12px);background:#f3f7fa;color:#081018;
@@ -156,9 +158,9 @@
 
   <section class="hero">
     <div class="hero-content">
-      <span class="badge">● LIVE FEED</span>
-      <h1>今日のサッカーを、ここだけで。</h1>
-      <p>海外・Jリーグ・日本代表・移籍情報をまとめてチェック。</p>
+      <span class="badge">BARÇA EDITION</span>
+      <h1>FOOTBALL NOW</h1>
+      <p>BARÇA NEWS & MORE<br>最新情報を、速く、見やすく。</p>
     </div>
   </section>
 
@@ -187,7 +189,7 @@
 <script>
 const QUERIES = {
   all: 'サッカー OR football',
-  barca: 'FCバルセロナ OR Barcelona サッカー',
+  barca: 'FC Barcelona OR バルセロナ OR Barça',
   transfer: 'サッカー 移籍 OR transfer football',
   jleague: 'Jリーグ サッカー',
   europe: '欧州サッカー プレミア ラリーガ セリエA ブンデスリーガ',
@@ -259,14 +261,20 @@ function skeletons(){
 
 function normalizeItems(data){
   const items = Array.isArray(data.items) ? data.items : [];
-  return items.map(x=>({
+  const normalized = items.map(x=>({
     title:(x.title||'').replace(/\s*-\s*[^-]+$/,'').trim(),
     link:x.link||x.guid||'#',
     pubDate:x.pubDate||x.published||'',
     author:x.author||'',
     thumbnail:x.thumbnail||x.enclosure?.link||'',
     description:(x.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
-  })).filter(x=>x.title && x.link && x.link!=='#');
+  })).filter(x=>x.title && x.link && x.link!=='#')
+    .sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
+  const recent = normalized.filter(x => {
+    const t = new Date(x.pubDate).getTime();
+    return Number.isFinite(t) && (Date.now()-t) < 1000*60*60*24*7;
+  });
+  return recent.length >= 5 ? recent : normalized;
 }
 
 async function fetchViaRss2Json(rssUrl){
