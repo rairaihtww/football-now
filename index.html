@@ -57,7 +57,7 @@
       background:
         linear-gradient(180deg,rgba(3,10,24,.08) 0%,rgba(3,10,24,.28) 45%,rgba(5,8,18,.92) 100%),
         linear-gradient(90deg,rgba(0,77,152,.18),rgba(165,0,68,.18)),
-        url('./busquets-bg.png') center 23%/cover no-repeat;
+        var(--hero-image) var(--hero-position, center 23%)/cover no-repeat;
       box-shadow:var(--shadow);
       min-height:310px
     }
@@ -171,7 +171,7 @@
     </div>
   </header>
 
-  <section class="hero">
+  <section class="hero" id="hero">
     <div class="hero-content">
       <span class="badge">BARÇA EDITION</span>
       <h1>FOOTBALL NOW</h1>
@@ -473,6 +473,58 @@ document.querySelectorAll('.nav').forEach(nav=>nav.addEventListener('click',()=>
 }));
 
 $('#refreshBtn').addEventListener('click',()=>loadNews(true));
+
+
+const BUSQUETS_BACKGROUNDS = [
+  './busquets-01.png',
+  './busquets-02.png',
+  './busquets-03.png',
+  './busquets-04.png',
+  './busquets-05.png',
+  './busquets-06.png',
+  './busquets-07.png',
+  './busquets-08.png',
+  './busquets-09.png',
+  './busquets-10.png',
+  './busquets-11.png',
+  './busquets-12.png',
+  './busquets-13.png',
+  './busquets-14.png',
+  './busquets-15.png',
+  './busquets-16.png',
+  './busquets-17.png',
+  './busquets-18.png',
+  './busquets-19.png',
+  './busquets-20.png',
+  './busquets-21.png',
+  './busquets-22.png',
+  './busquets-23.png',
+  './busquets-24.png',
+  './busquets-25.png',
+  './busquets-26.png',
+  './busquets-27.png'
+];
+
+function setRandomBusquetsBackground(){
+  const hero = document.getElementById('hero');
+  if(!hero) return;
+  let previous = Number(sessionStorage.getItem('footballNowLastBg') ?? -1);
+  let next = Math.floor(Math.random() * BUSQUETS_BACKGROUNDS.length);
+  if(BUSQUETS_BACKGROUNDS.length > 1 && next === previous){
+    next = (next + 1 + Math.floor(Math.random() * (BUSQUETS_BACKGROUNDS.length - 1))) % BUSQUETS_BACKGROUNDS.length;
+  }
+  sessionStorage.setItem('footballNowLastBg', String(next));
+  hero.style.setProperty('--hero-image', `url("${BUSQUETS_BACKGROUNDS[next]}")`);
+
+  // Portrait images generally look better centered; wide images get a slightly higher crop.
+  const probe = new Image();
+  probe.onload = () => {
+    const portrait = probe.naturalHeight > probe.naturalWidth;
+    hero.style.setProperty('--hero-position', portrait ? 'center 20%' : 'center 28%');
+  };
+  probe.src = BUSQUETS_BACKGROUNDS[next];
+}
+setRandomBusquetsBackground();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
