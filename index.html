@@ -830,6 +830,7 @@ document.querySelectorAll('.nav').forEach(nav=>nav.addEventListener('click',()=>
   nav.classList.add('active');
   state.view=view;
   showView(view);
+  if(view==='matches') loadMatches();
   if(view==='home') render();
   if(view==='favorites') render();
 }));
