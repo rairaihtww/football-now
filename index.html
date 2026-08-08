@@ -148,6 +148,28 @@
     .xaccount strong{display:block;font-size:12px;margin-bottom:3px}.xaccount small{color:#9aa7b6;font-size:10px}
     .xaccount .role{display:block;color:#edbb00;font-size:9px;font-weight:900;margin-top:7px}
 
+
+    .matchesPage{display:none;padding:0 14px 20px}
+    .matchesPage.show{display:block}
+    .dateTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+    .dateTab{border:1px solid var(--line);background:var(--card);color:#aeb8c4;padding:10px 5px;border-radius:13px;font-weight:850}
+    .dateTab.active{background:linear-gradient(90deg,#004d98,#a50044);color:#fff;border-color:transparent}
+    .matchCard{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:10px;padding:13px}
+    .matchCard.barca{border-color:rgba(237,187,0,.55);box-shadow:0 0 0 1px rgba(237,187,0,.08) inset}
+    .competition{font-size:10px;color:#9aa7b6;font-weight:800;margin-bottom:11px;display:flex;justify-content:space-between}
+    .livePill{color:#fff;background:#b51f3b;padding:3px 7px;border-radius:7px;font-size:9px}
+    .teams{display:grid;grid-template-columns:1fr 60px 1fr;align-items:center;gap:8px;text-align:center}
+    .team{font-size:13px;font-weight:850;line-height:1.25}
+    .score{font-size:19px;font-weight:950;color:#fff}
+    .kickoff{font-size:12px;font-weight:900;color:#edbb00}
+    .matchState{text-align:center;color:#8f9aa7;font-size:10px;margin-top:9px}
+    .matchHeader{display:flex;align-items:center;justify-content:space-between;margin-top:15px}
+    .matchHeader h2{margin:0;font-size:20px}
+    .matchRefresh{border:0;background:transparent;color:#edbb00;font-weight:850}
+    .matchEmpty{text-align:center;color:#9aa7b6;padding:45px 15px}
+    .powered{text-align:center;font-size:10px;color:#778391;margin:18px 0}
+    .powered a{color:#aeb8c4;text-decoration:none;font-weight:800}
+
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
   </style>
 </head>
@@ -171,6 +193,7 @@
     </div>
   </header>
 
+  <div id="homeContent">
   <section class="hero" id="hero">
     <div class="hero-content">
       <span class="badge">BARÇA EDITION</span>
@@ -197,6 +220,17 @@
 
   <main class="feed" id="feed"></main>
   <div class="empty" id="empty"><b>ニュースが見つかりません</b>カテゴリーや検索ワードを変えてみてください。</div>
+  </div>
+  <section class="matchesPage" id="matchesPage">
+    <div class="matchHeader"><h2>試合</h2><button class="matchRefresh" id="matchRefresh">↻ 更新</button></div>
+    <div class="dateTabs">
+      <button class="dateTab" data-day="-1">昨日</button>
+      <button class="dateTab active" data-day="0">今日</button>
+      <button class="dateTab" data-day="1">明日</button>
+    </div>
+    <div id="matchesFeed"><div class="matchEmpty">試合情報を取得しています…</div></div>
+    <div class="powered">Data from <a href="https://sportscore.com/" rel="dofollow" target="_blank">SportScore</a></div>
+  </section>
 </div>
 
 <nav class="bottom">
@@ -461,13 +495,97 @@ document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',(
   loadNews(true);
 }));
 
+
+let matchDayOffset=0;
+let matchCache=[];
+
+function localDateKey(date){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+}
+function matchDate(m){
+  const raw=m.start_time||m.startTime||m.date||m.kickoff||m.timestamp||m.start_at;
+  if(!raw) return null;
+  if(typeof raw==='number') return new Date(raw>1e12?raw:raw*1000);
+  const d=new Date(raw); return Number.isNaN(d.getTime())?null:d;
+}
+function teamText(t){
+  if(!t) return 'TBD';
+  return typeof t==='string'?t:(t.name||t.short_name||t.title||'TBD');
+}
+function matchTeams(m){
+  return {
+    home:teamText(m.home_team||m.homeTeam||m.home),
+    away:teamText(m.away_team||m.awayTeam||m.away)
+  };
+}
+function scoreValue(m,side){
+  const direct=m[side+'_score'] ?? m[side+'Score'];
+  if(direct!==undefined&&direct!==null) return direct;
+  if(m.score && typeof m.score==='object') return m.score[side] ?? m.score[side+'_score'] ?? '';
+  return '';
+}
+function matchStatus(m){
+  return String(m.status?.name||m.status||m.state||'').toLowerCase();
+}
+function renderMatches(){
+  const box=document.getElementById('matchesFeed');
+  const target=new Date(); target.setDate(target.getDate()+matchDayOffset);
+  const key=localDateKey(target);
+  let list=matchCache.filter(m=>{const d=matchDate(m);return d&&localDateKey(d)===key;});
+  list.sort((a,b)=>{
+    const ta=matchTeams(a),tb=matchTeams(b);
+    const ba=/barcelona|バルセロナ/i.test(ta.home+' '+ta.away)?0:1;
+    const bb=/barcelona|バルセロナ/i.test(tb.home+' '+tb.away)?0:1;
+    return ba-bb || ((matchDate(a)?.getTime()||0)-(matchDate(b)?.getTime()||0));
+  });
+  if(!list.length){box.innerHTML='<div class="matchEmpty">この日の試合は見つかりませんでした。</div>';return;}
+  box.innerHTML=list.map(m=>{
+    const t=matchTeams(m), d=matchDate(m), status=matchStatus(m);
+    const hs=scoreValue(m,'home'), as=scoreValue(m,'away');
+    const live=/live|half|playing|in progress|1st|2nd/.test(status);
+    const done=/finished|final|ended|ft/.test(status);
+    const isBarca=/barcelona|バルセロナ/i.test(t.home+' '+t.away);
+    const middle=(live||done||hs!==''||as!=='')?`<div class="score">${hs===''?'-':hs} - ${as===''?'-':as}</div>`:
+      `<div class="kickoff">${d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'}</div>`;
+    const comp=m.competition?.name||m.competition||m.league?.name||m.league||m.tournament?.name||'FOOTBALL';
+    return `<div class="matchCard ${isBarca?'barca':''}">
+      <div class="competition"><span>${escapeHTML(String(comp))}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
+      <div class="teams"><div class="team">${escapeHTML(t.home)}</div>${middle}<div class="team">${escapeHTML(t.away)}</div></div>
+      <div class="matchState">${live?'試合中':done?'試合終了':d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}</div>
+    </div>`;
+  }).join('');
+}
+async function loadMatches(){
+  const box=document.getElementById('matchesFeed');
+  box.innerHTML='<div class="matchEmpty">試合情報を取得しています…</div>';
+  try{
+    const r=await fetch('https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=football-now',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    matchCache=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
+    renderMatches();
+  }catch(e){
+    box.innerHTML='<div class="matchEmpty">試合情報を取得できませんでした。<br>「更新」を押してもう一度試してください。</div>';
+  }
+}
+function showView(view){
+  const home=document.getElementById('homeContent'), matches=document.getElementById('matchesPage');
+  if(view==='matches'){home.style.display='none';matches.classList.add('show');loadMatches();}
+  else{home.style.display='block';matches.classList.remove('show');}
+}
+document.querySelectorAll('.dateTab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.dateTab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  matchDayOffset=Number(b.dataset.day);renderMatches();
+}));
+document.getElementById('matchRefresh').addEventListener('click',loadMatches);
+
 document.querySelectorAll('.nav').forEach(nav=>nav.addEventListener('click',()=>{
   const view=nav.dataset.view;
-  if(view==='matches'){showToast('試合ページはV2で追加予定');return;}
-  if(view==='settings'){showToast('設定ページはV2で追加予定');return;}
+  if(view==='settings'){showToast('設定ページは今後追加予定');return;}
   document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
   nav.classList.add('active');
   state.view=view;
+  showView(view);
   if(view==='home') render();
   if(view==='favorites') render();
 }));
