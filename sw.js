@@ -1,4 +1,4 @@
-const CACHE = 'football-now-v1.9.0';
+const CACHE = 'football-now-v2.0.0';
 const APP_SHELL = [
   './',
   './index.html',

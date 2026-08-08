@@ -83,3 +83,12 @@ icon-180.png と icon-512.png は今のリポジトリにあるものをその�
 - 選手タップで個人スタッツ表示
 - Cloudflare Workerテンプレート追加（API tokenをGitHub Pagesに露出しない）
 - FotMobは規約上スクレイピングせず、データ基盤は利用条件が明確なAPIを使用
+
+## V1.9 Auto Schedule
+- 手入力の試合日程を廃止
+- APIから期間指定で自動取得する構造へ変更
+- 1日 / 7日間 / 30日間
+- 日付横スクロール
+- HTML date picker
+- 今後の日程も選択可能
+- 日本時間基準

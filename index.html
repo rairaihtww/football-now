@@ -218,6 +218,21 @@
     .apiNote{background:#141c27;border:1px dashed #334457;border-radius:14px;padding:11px 12px;
       color:#9aa7b6;font-size:11px;line-height:1.55;margin-top:10px}
 
+
+    .scheduleToolbar{margin:12px 0}
+    .rangeTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+    .rangeBtn{border:1px solid var(--line);background:var(--card);color:#aeb8c4;border-radius:12px;padding:9px 5px;font-weight:900;font-size:11px}
+    .rangeBtn.active{background:linear-gradient(90deg,#004d98,#a50044);border-color:transparent;color:#fff}
+    .dateScroller{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 8px;scrollbar-width:none}
+    .dateScroller::-webkit-scrollbar{display:none}
+    .dayBtn{min-width:62px;border:1px solid var(--line);background:var(--card);color:#aeb8c4;border-radius:14px;padding:8px 5px;font-weight:850}
+    .dayBtn small{display:block;font-size:9px;margin-bottom:3px}.dayBtn b{font-size:13px}
+    .dayBtn.active{background:#16283d;border-color:#edbb00;color:#fff}
+    .calendarRow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .calendarWrap{flex:1;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:8px 11px}
+    .calendarWrap input{width:100%;border:0;background:transparent;color:#fff;font:inherit}
+    .scheduleMeta{font-size:10px;color:#8f9aa7;margin:5px 2px 10px}
+
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
   </style>
 </head>
@@ -277,10 +292,18 @@
       <button class="chip" data-league="world">海外</button>
       <button class="chip" data-league="friendly">親善試合</button>
     </div>
-    <div class="dateTabs">
-      <button class="dateTab" data-day="-1">昨日</button>
-      <button class="dateTab active" data-day="0">今日</button>
-      <button class="dateTab" data-day="1">明日</button>
+    <div class="scheduleToolbar">
+      <div class="rangeTabs">
+        <button class="rangeBtn active" data-range="day">1日</button>
+        <button class="rangeBtn" data-range="week">7日間</button>
+        <button class="rangeBtn" data-range="month">30日間</button>
+      </div>
+      <div class="calendarRow">
+        <div class="calendarWrap"><input type="date" id="matchDatePicker" aria-label="試合日を選択"></div>
+        <button class="rangeBtn" id="todayBtn" style="padding:10px 13px">今日</button>
+      </div>
+      <div class="dateScroller" id="dateScroller"></div>
+      <div class="scheduleMeta" id="scheduleMeta"></div>
     </div>
     <div id="matchesFeed"><div class="matchEmpty">試合情報を取得しています…</div></div>
     <div class="powered">Data from <a href="https://sportscore.com/" rel="dofollow" target="_blank">SportScore</a></div>
@@ -561,147 +584,72 @@ document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',(
 }));
 
 
-let matchDayOffset=0;
 let matchCache=[];
 let matchLeagueFilter='all';
+let scheduleRange='day';
+let selectedMatchDate=new Date();
 
 // J.LEAGUE official opening-round fixtures.
 // These are used as a reliable fallback/merge so J1/J2/J3 do not disappear
 // when the general live-score provider has incomplete Japanese coverage.
-const JLEAGUE_FIXTURES = [
-  {date:'2026-08-07',time:'19:25',league:'明治安田J1リーグ',home:'横浜FM',away:'鹿島'},
-  {date:'2026-08-07',time:'19:30',league:'明治安田J1リーグ',home:'G大阪',away:'浦和'},
+// V1.9: 試合日程は手入力せず、接続したデータAPIから自動取得します。
 
-  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'柏',away:'水戸'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'FC東京',away:'町田'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'名古屋',away:'清水'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'C大阪',away:'岡山'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'福岡',away:'神戸'},
-  {date:'2026-08-08',time:'19:15',league:'明治安田J1リーグ',home:'広島',away:'千葉'},
-
-  {date:'2026-08-08',time:'14:45',league:'明治安田J2リーグ',home:'札幌',away:'徳島'},
-  {date:'2026-08-08',time:'18:30',league:'明治安田J2リーグ',home:'八戸',away:'富山'},
-  {date:'2026-08-08',time:'18:30',league:'明治安田J2リーグ',home:'藤枝',away:'仙台'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'大宮',away:'新潟'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'磐田',away:'秋田'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'大分',away:'湘南'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'宮崎',away:'横浜FC'},
-  {date:'2026-08-08',time:'19:30',league:'明治安田J2リーグ',home:'鳥栖',away:'甲府'},
-
-  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'相模原',away:'熊本'},
-  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'長野',away:'山口'},
-  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'琉球',away:'北九州'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'鳥取',away:'FC大阪'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'高知',away:'松本'},
-  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'鹿児島',away:'群馬'},
-
-  {date:'2026-08-09',time:'18:00',league:'明治安田J2リーグ',home:'いわき',away:'今治'},
-  {date:'2026-08-09',time:'19:00',league:'明治安田J2リーグ',home:'山形',away:'栃木C'},
-  {date:'2026-08-09',time:'18:00',league:'明治安田J3リーグ',home:'福島',away:'讃岐'},
-  {date:'2026-08-09',time:'18:30',league:'明治安田J3リーグ',home:'滋賀',away:'岐阜'},
-  {date:'2026-08-09',time:'19:00',league:'明治安田J3リーグ',home:'栃木SC',away:'金沢'},
-  {date:'2026-08-09',time:'19:00',league:'明治安田J3リーグ',home:'愛媛',away:'奈良'}
-].map(x=>({
-  ...x,
-  start_time:`${x.date}T${x.time}:00+09:00`,
-  competition:{name:x.league},
-  home_team:{name:x.home},
-  away_team:{name:x.away},
-  source:'J.LEAGUE公式'
-}));
-
-
-const FRIENDLY_FIXTURES = [
-  {date:'2026-08-09',time:'第1試合 03:00',league:'Friuli Venezia Giulia Cup',home:'Udinese',away:'Nottingham Forest',special:'45 MIN'},
-  {date:'2026-08-09',time:'第2試合',league:'Friuli Venezia Giulia Cup',home:'FC Barcelona',away:'Nottingham Forest',special:'45 MIN・第1試合終了後'},
-  {date:'2026-08-09',time:'第3試合',league:'Friuli Venezia Giulia Cup',home:'Udinese',away:'FC Barcelona',special:'45 MIN・連続試合'},
-
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Real Betis',away:'Bournemouth'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Rennes',away:'Brentford'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Brighton',away:'Roma'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Chelsea',away:'AC Milan'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Coventry',away:'Espanyol'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Stuttgart',away:'Everton'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Ipswich',away:'Rayo Vallecano'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Leeds',away:'RB Leipzig'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Manchester United',away:'Paris Saint-Germain'},
-  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Valencia',away:'Newcastle'}
-].map(x=>({
-  ...x,
-  start_time:`${x.date}T12:00:00+09:00`,
-  competition:{name:x.league},
-  home_team:{name:x.home},
-  away_team:{name:x.away},
-  source:'公式プレシーズン日程',
-  friendly:true,
-  display_time:x.time
-}));
-
-function mergeAllFixtures(apiMatches){
-  const combined=mergeJLeagueFixtures(apiMatches);
-  const byKey=new Map();
-  [...FRIENDLY_FIXTURES,...combined].forEach(m=>{
-    const t=matchTeams(m), d=matchDate(m);
-    const key=(d?localDateKey(d):'')+'|'+t.home+'|'+t.away;
-    if(!byKey.has(key) || (!m.friendly && m.source!=='公式プレシーズン日程')) byKey.set(key,m);
-  });
-  return [...byKey.values()];
-}
-
-function mergeJLeagueFixtures(apiMatches){
-  const byKey=new Map();
-  [...JLEAGUE_FIXTURES,...apiMatches].forEach(m=>{
-    const t=matchTeams(m);
-    const d=matchDate(m);
-    const key=(d?localDateKey(d):'')+'|'+t.home+'|'+t.away;
-    if(!byKey.has(key) || m.source!=='J.LEAGUE公式') byKey.set(key,m);
-  });
-  return [...byKey.values()];
-}
-
-function localDateKey(date){
-  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
-}
-function matchDate(m){
-  const raw=m.start_time||m.startTime||m.date||m.kickoff||m.timestamp||m.start_at;
-  if(!raw) return null;
-  if(typeof raw==='number') return new Date(raw>1e12?raw:raw*1000);
-  const d=new Date(raw); return Number.isNaN(d.getTime())?null:d;
-}
-function teamText(t){
-  if(!t) return 'TBD';
-  return typeof t==='string'?t:(t.name||t.short_name||t.title||'TBD');
-}
-function matchTeams(m){
-  return {
-    home:teamText(m.home_team||m.homeTeam||m.home),
-    away:teamText(m.away_team||m.awayTeam||m.away)
-  };
-}
-function scoreValue(m,side){
-  const direct=m[side+'_score'] ?? m[side+'Score'];
-  if(direct!==undefined&&direct!==null) return direct;
-  if(m.score && typeof m.score==='object') return m.score[side] ?? m.score[side+'_score'] ?? '';
-  return '';
-}
 function matchStatus(m){
   return String(m.status?.name||m.status||m.state||'').toLowerCase();
 }
+function dateKeyFromPicker(){
+  return localDateKey(selectedMatchDate);
+}
+function rangeEndDate(){
+  const x=new Date(selectedMatchDate);
+  x.setDate(x.getDate()+(scheduleRange==='week'?6:scheduleRange==='month'?29:0));
+  return x;
+}
+function isInSelectedRange(d){
+  if(!d) return false;
+  const k=localDateKey(d), a=dateKeyFromPicker(), b=localDateKey(rangeEndDate());
+  return k>=a && k<=b;
+}
+function renderDateScroller(){
+  const sc=document.getElementById('dateScroller'); if(!sc) return;
+  const base=new Date(selectedMatchDate); base.setDate(base.getDate()-3);
+  const today=localDateKey(new Date());
+  let html='';
+  for(let i=0;i<14;i++){
+    const d=new Date(base); d.setDate(base.getDate()+i);
+    const key=localDateKey(d), active=key===dateKeyFromPicker();
+    const label=key===today?'今日':d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',weekday:'short'});
+    html+=`<button class="dayBtn ${active?'active':''}" data-date="${key}"><small>${label}</small><b>${d.getMonth()+1}/${d.getDate()}</b></button>`;
+  }
+  sc.innerHTML=html;
+  sc.querySelectorAll('.dayBtn').forEach(b=>b.addEventListener('click',()=>{
+    selectedMatchDate=new Date(b.dataset.date+'T12:00:00+09:00');
+    document.getElementById('matchDatePicker').value=b.dataset.date;
+    renderDateScroller(); loadMatches();
+  }));
+  requestAnimationFrame(()=>sc.querySelector('.dayBtn.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}));
+}
 function renderMatches(){
   const box=document.getElementById('matchesFeed');
-  const target=new Date(); target.setDate(target.getDate()+matchDayOffset);
-  const key=localDateKey(target);
-  let list=matchCache.filter(m=>{const d=matchDate(m);return d&&localDateKey(d)===key;});
-  if(matchLeagueFilter==='jleague') list=list.filter(m=>/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
-  if(matchLeagueFilter==='world') list=list.filter(m=>!/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
-  if(matchLeagueFilter==='friendly') list=list.filter(m=>m.friendly || /親善|friendly/i.test(String(m.competition?.name||m.competition||'')));
+  let list=matchCache.filter(m=>isInSelectedRange(matchDate(m)));
+  if(matchLeagueFilter==='jleague') list=list.filter(m=>/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３|J\.? League/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
+  if(matchLeagueFilter==='world') list=list.filter(m=>!/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３|J\.? League/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
+  if(matchLeagueFilter==='friendly') list=list.filter(m=>m.friendly || /親善|friendly/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
   list.sort((a,b)=>{
     const ta=matchTeams(a),tb=matchTeams(b);
     const ba=/barcelona|バルセロナ/i.test(ta.home+' '+ta.away)?0:1;
     const bb=/barcelona|バルセロナ/i.test(tb.home+' '+tb.away)?0:1;
     return ba-bb || ((matchDate(a)?.getTime()||0)-(matchDate(b)?.getTime()||0));
   });
-  if(!list.length){box.innerHTML='<div class="matchEmpty">この日の試合は見つかりませんでした。</div>';return;}
+  const a=selectedMatchDate.toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
+  const b=rangeEndDate().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
+  document.getElementById('scheduleMeta').textContent=scheduleRange==='day'?`${a}の試合`:`${a}〜${b} ・ ${list.length}試合`;
+  if(!list.length){
+    box.innerHTML=ENHANCED_API_BASE
+      ?'<div class="matchEmpty">この期間の試合は見つかりませんでした。</div>'
+      :'<div class="matchEmpty">試合日程APIがまだ未接続です。<br>V1.9では手入力の日程を廃止しました。</div>';
+    return;
+  }
   box.innerHTML=list.map(m=>{
     const t=matchTeams(m), d=matchDate(m), status=matchStatus(m);
     const hs=scoreValue(m,'home'), as=scoreValue(m,'away');
@@ -709,36 +657,33 @@ function renderMatches(){
     const done=/finished|final|ended|ft/.test(status);
     const isBarca=/barcelona|バルセロナ/i.test(t.home+' '+t.away);
     const middle=(live||done||hs!==''||as!=='')?`<div class="score">${hs===''?'-':hs} - ${as===''?'-':as}</div>`:
-      `<div class="kickoff">${m.display_time|| (d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--')}</div>`;
+      `<div class="kickoff">${d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'}</div>`;
     const comp=m.competition?.name||m.competition||m.league?.name||m.league||m.tournament?.name||'FOOTBALL';
     const globalIndex=matchCache.indexOf(m);
     return `<div class="matchCard ${isBarca?'barca':''}" data-match-index="${globalIndex}">
-      <div class="competition"><span>${escapeHTML(String(comp))}${m.source==='J.LEAGUE公式'?'<span class="officialBadge">公式日程</span>':''}${m.friendly?'<span class="officialBadge">FRIENDLY</span>':''}${m.special?'<span class="officialBadge">'+escapeHTML(m.special)+'</span>':''}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
+      <div class="competition"><span>${escapeHTML(String(comp))}${m.friendly?'<span class="officialBadge">FRIENDLY</span>':''}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
       <div class="teams"><div class="team">${escapeHTML(t.home)}</div>${middle}<div class="team">${escapeHTML(t.away)}</div></div>
-      <div class="matchState">${m.special?escapeHTML(m.special)+' ・ ':''}${live?'試合中':done?'試合終了':d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}</div>
+      <div class="matchState">${d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}${live?' ・ 試合中':done?' ・ 試合終了':''}</div>
     </div>`;
   }).join('');
 }
-async function loadMatches(){
-  const box=document.getElementById('matchesFeed');
-  box.innerHTML='<div class="matchEmpty">試合情報を取得しています…</div>';
+async function fetchScheduleRange(from,to){
+  if(!ENHANCED_API_BASE) return [];
   try{
-    const r=await fetch('https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=football-now',{cache:'no-store'});
+    const base=ENHANCED_API_BASE.replace(/\/$/,'');
+    const r=await fetch(`${base}/fixtures?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
-    const api=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
-    const dates=[-1,0,1].map(off=>{const x=new Date();x.setDate(x.getDate()+off);return localDateKey(x);});
-    const enhanced=(await Promise.all(dates.map(fetchEnhancedFixtures))).flat();
-    matchCache=mergeAllFixtures([...api,...enhanced]);
-    renderMatches();
-  }catch(e){
-    const dates=[-1,0,1].map(off=>{const x=new Date();x.setDate(x.getDate()+off);return localDateKey(x);});
-    const enhanced=(await Promise.all(dates.map(fetchEnhancedFixtures))).flat();
-    matchCache=mergeAllFixtures(enhanced);
-    renderMatches();
-  }
+    return Array.isArray(d.data)?d.data:(Array.isArray(d)?d:[]);
+  }catch(e){ console.warn(e); return []; }
 }
-
+async function loadMatches(){
+  const box=document.getElementById('matchesFeed');
+  box.innerHTML='<div class="matchEmpty">試合日程を取得しています…</div>';
+  const from=dateKeyFromPicker(), to=localDateKey(rangeEndDate());
+  matchCache=await fetchScheduleRange(from,to);
+  renderMatches();
+}
 function extractLineupObjects(m){
   const expected = m.expectedlineups || m.expectedLineups || m.expected_lineups || [];
   const official = m.lineups || m.lineup || [];
@@ -848,25 +793,6 @@ function openMatchDetail(index){
     openPlayerSheet(btn.dataset.player,btn.dataset.team,st);
   }));
 }
-async function fetchEnhancedFixtures(dateKey){
-  if(!ENHANCED_API_BASE) return [];
-  try{
-    const r=await fetch(`${ENHANCED_API_BASE.replace(/\/$/,'')}/fixtures?date=${encodeURIComponent(dateKey)}`,{cache:'no-store'});
-    if(!r.ok) return [];
-    const d=await r.json();
-    return Array.isArray(d.data)?d.data:(Array.isArray(d)?d:[]);
-  }catch{return [];}
-}
-document.getElementById('matchesFeed').addEventListener('click',e=>{
-  const card=e.target.closest('.matchCard'); if(!card) return;
-  openMatchDetail(Number(card.dataset.matchIndex));
-});
-document.getElementById('sheetClose').addEventListener('click',()=>document.getElementById('playerSheet').classList.remove('show'));
-document.getElementById('backToMatches').addEventListener('click',()=>{
-  document.getElementById('matchDetail').classList.remove('show');
-  document.getElementById('matchesPage').classList.add('show');
-});
-
 function showView(view){
   const home=document.getElementById('homeContent'), matches=document.getElementById('matchesPage'), detail=document.getElementById('matchDetail');
   detail.classList.remove('show');
@@ -877,10 +803,24 @@ document.querySelectorAll('#leagueChips .chip').forEach(b=>b.addEventListener('c
   document.querySelectorAll('#leagueChips .chip').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); matchLeagueFilter=b.dataset.league; renderMatches();
 }));
-document.querySelectorAll('.dateTab').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.dateTab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  matchDayOffset=Number(b.dataset.day);renderMatches();
+
+document.querySelectorAll('.rangeBtn[data-range]').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.rangeBtn[data-range]').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active'); scheduleRange=btn.dataset.range; loadMatches();
 }));
+document.getElementById('matchDatePicker').value=dateKeyFromPicker();
+document.getElementById('matchDatePicker').addEventListener('change',e=>{
+  if(!e.target.value) return;
+  selectedMatchDate=new Date(e.target.value+'T12:00:00+09:00');
+  renderDateScroller(); loadMatches();
+});
+document.getElementById('todayBtn').addEventListener('click',()=>{
+  selectedMatchDate=new Date();
+  document.getElementById('matchDatePicker').value=dateKeyFromPicker();
+  renderDateScroller(); loadMatches();
+});
+renderDateScroller();
+
 document.getElementById('matchRefresh').addEventListener('click',loadMatches);
 
 document.querySelectorAll('.nav').forEach(nav=>nav.addEventListener('click',()=>{
