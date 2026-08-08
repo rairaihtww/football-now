@@ -170,6 +170,34 @@
     .officialBadge{font-size:9px;color:#edbb00;font-weight:900;margin-left:6px}.powered{text-align:center;font-size:10px;color:#778391;margin:18px 0}
     .powered a{color:#aeb8c4;text-decoration:none;font-weight:800}
 
+
+    .matchDetail{display:none;padding:14px}
+    .matchDetail.show{display:block}
+    .detailTop{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .backBtn{border:1px solid var(--line);background:var(--card);color:#fff;border-radius:12px;padding:9px 12px;font-weight:850}
+    .detailTitle{font-size:16px;font-weight:950}
+    .detailScore{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;text-align:center;margin-bottom:14px}
+    .detailTeams{display:grid;grid-template-columns:1fr 70px 1fr;align-items:center;gap:8px}
+    .detailTeams strong{font-size:14px}
+    .pitch{position:relative;min-height:500px;border-radius:22px;overflow:hidden;
+      background:
+        linear-gradient(rgba(255,255,255,.18) 2px,transparent 2px),
+        linear-gradient(90deg,rgba(255,255,255,.12) 2px,transparent 2px),
+        linear-gradient(180deg,#176b3a,#0e542c);
+      background-size:100% 25%,25% 100%,100% 100%;
+      border:2px solid rgba(255,255,255,.5);margin:12px 0 16px}
+    .pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.55)}
+    .pitch:after{content:"";position:absolute;left:50%;top:50%;width:88px;height:88px;border:2px solid rgba(255,255,255,.55);border-radius:50%;transform:translate(-50%,-50%)}
+    .lineupEmpty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;color:#fff;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
+    .playerDot{position:absolute;transform:translate(-50%,-50%);z-index:4;text-align:center;width:76px}
+    .playerDot button{width:42px;height:42px;border-radius:50%;border:2px solid #fff;background:#0b111a;color:#edbb00;font-weight:950}
+    .playerDot span{display:block;font-size:9px;font-weight:850;margin-top:4px;text-shadow:0 1px 4px #000}
+    .statsPanel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:18px}
+    .statsPanel h3{margin:0 0 10px;font-size:15px}
+    .statsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .statBox{background:#0b111a;border-radius:12px;padding:10px}
+    .statBox small{display:block;color:#8f9aa7;font-size:9px}.statBox b{font-size:15px}
+
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
   </style>
 </head>
@@ -227,6 +255,7 @@
       <button class="chip active" data-league="all">すべて</button>
       <button class="chip" data-league="jleague">Jリーグ</button>
       <button class="chip" data-league="world">海外</button>
+      <button class="chip" data-league="friendly">親善試合</button>
     </div>
     <div class="dateTabs">
       <button class="dateTab" data-day="-1">昨日</button>
@@ -235,6 +264,10 @@
     </div>
     <div id="matchesFeed"><div class="matchEmpty">試合情報を取得しています…</div></div>
     <div class="powered">Data from <a href="https://sportscore.com/" rel="dofollow" target="_blank">SportScore</a></div>
+  </section>
+  <section class="matchDetail" id="matchDetail">
+    <div class="detailTop"><button class="backBtn" id="backToMatches">← 試合一覧</button><div class="detailTitle">試合詳細</div></div>
+    <div id="detailContent"></div>
   </section>
 </div>
 
@@ -550,6 +583,44 @@ const JLEAGUE_FIXTURES = [
   source:'J.LEAGUE公式'
 }));
 
+
+const FRIENDLY_FIXTURES = [
+  {date:'2026-08-09',time:'第1試合 03:00',league:'Friuli Venezia Giulia Cup',home:'Udinese',away:'Nottingham Forest',special:'45 MIN'},
+  {date:'2026-08-09',time:'第2試合',league:'Friuli Venezia Giulia Cup',home:'FC Barcelona',away:'Nottingham Forest',special:'45 MIN・第1試合終了後'},
+  {date:'2026-08-09',time:'第3試合',league:'Friuli Venezia Giulia Cup',home:'Udinese',away:'FC Barcelona',special:'45 MIN・連続試合'},
+
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Real Betis',away:'Bournemouth'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Rennes',away:'Brentford'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Brighton',away:'Roma'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Chelsea',away:'AC Milan'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Coventry',away:'Espanyol'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Stuttgart',away:'Everton'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Ipswich',away:'Rayo Vallecano'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Leeds',away:'RB Leipzig'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Manchester United',away:'Paris Saint-Germain'},
+  {date:'2026-08-08',time:'未定',league:'クラブ親善試合',home:'Valencia',away:'Newcastle'}
+].map(x=>({
+  ...x,
+  start_time:`${x.date}T12:00:00+09:00`,
+  competition:{name:x.league},
+  home_team:{name:x.home},
+  away_team:{name:x.away},
+  source:'公式プレシーズン日程',
+  friendly:true,
+  display_time:x.time
+}));
+
+function mergeAllFixtures(apiMatches){
+  const combined=mergeJLeagueFixtures(apiMatches);
+  const byKey=new Map();
+  [...FRIENDLY_FIXTURES,...combined].forEach(m=>{
+    const t=matchTeams(m), d=matchDate(m);
+    const key=(d?localDateKey(d):'')+'|'+t.home+'|'+t.away;
+    if(!byKey.has(key) || (!m.friendly && m.source!=='公式プレシーズン日程')) byKey.set(key,m);
+  });
+  return [...byKey.values()];
+}
+
 function mergeJLeagueFixtures(apiMatches){
   const byKey=new Map();
   [...JLEAGUE_FIXTURES,...apiMatches].forEach(m=>{
@@ -596,6 +667,7 @@ function renderMatches(){
   let list=matchCache.filter(m=>{const d=matchDate(m);return d&&localDateKey(d)===key;});
   if(matchLeagueFilter==='jleague') list=list.filter(m=>/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
   if(matchLeagueFilter==='world') list=list.filter(m=>!/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
+  if(matchLeagueFilter==='friendly') list=list.filter(m=>m.friendly || /親善|friendly/i.test(String(m.competition?.name||m.competition||'')));
   list.sort((a,b)=>{
     const ta=matchTeams(a),tb=matchTeams(b);
     const ba=/barcelona|バルセロナ/i.test(ta.home+' '+ta.away)?0:1;
@@ -610,12 +682,13 @@ function renderMatches(){
     const done=/finished|final|ended|ft/.test(status);
     const isBarca=/barcelona|バルセロナ/i.test(t.home+' '+t.away);
     const middle=(live||done||hs!==''||as!=='')?`<div class="score">${hs===''?'-':hs} - ${as===''?'-':as}</div>`:
-      `<div class="kickoff">${d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'}</div>`;
+      `<div class="kickoff">${m.display_time|| (d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--')}</div>`;
     const comp=m.competition?.name||m.competition||m.league?.name||m.league||m.tournament?.name||'FOOTBALL';
-    return `<div class="matchCard ${isBarca?'barca':''}">
-      <div class="competition"><span>${escapeHTML(String(comp))}${m.source==='J.LEAGUE公式'?'<span class="officialBadge">公式日程</span>':''}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
+    const globalIndex=matchCache.indexOf(m);
+    return `<div class="matchCard ${isBarca?'barca':''}" data-match-index="${globalIndex}">
+      <div class="competition"><span>${escapeHTML(String(comp))}${m.source==='J.LEAGUE公式'?'<span class="officialBadge">公式日程</span>':''}${m.friendly?'<span class="officialBadge">FRIENDLY</span>':''}${m.special?'<span class="officialBadge">'+escapeHTML(m.special)+'</span>':''}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
       <div class="teams"><div class="team">${escapeHTML(t.home)}</div>${middle}<div class="team">${escapeHTML(t.away)}</div></div>
-      <div class="matchState">${live?'試合中':done?'試合終了':d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}</div>
+      <div class="matchState">${m.special?escapeHTML(m.special)+' ・ ':''}${live?'試合中':done?'試合終了':d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}</div>
     </div>`;
   }).join('');
 }
@@ -627,15 +700,49 @@ async function loadMatches(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     const api=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
-    matchCache=mergeJLeagueFixtures(api);
+    matchCache=mergeAllFixtures(api);
     renderMatches();
   }catch(e){
-    matchCache=mergeJLeagueFixtures([]);
+    matchCache=mergeAllFixtures([]);
     renderMatches();
   }
 }
+
+function renderLineupPitch(m){
+  const lineup=m.lineup||m.lineups||null;
+  if(!lineup) return `<div class="pitch"><div class="lineupEmpty">スタメン未発表<br><small style="font-weight:600">ラインナップ取得後、ここにピッチ配置で表示します</small></div></div>`;
+  return `<div class="pitch"><div class="lineupEmpty">ラインナップデータを取得しました</div></div>`;
+}
+function openMatchDetail(index){
+  const m=matchCache[index]; if(!m) return;
+  const t=matchTeams(m), d=matchDate(m), hs=scoreValue(m,'home'), as=scoreValue(m,'away');
+  document.getElementById('matchesPage').classList.remove('show');
+  document.getElementById('matchDetail').classList.add('show');
+  const comp=m.competition?.name||m.competition||'FOOTBALL';
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detailScore">
+      <div style="font-size:10px;color:#9aa7b6;margin-bottom:12px">${escapeHTML(String(comp))}${m.friendly?' ・ FRIENDLY':''}${m.special?' ・ '+escapeHTML(m.special):''}</div>
+      <div class="detailTeams"><strong>${escapeHTML(t.home)}</strong><div class="${hs!==''||as!==''?'score':'kickoff'}">${hs!==''||as!==''?`${hs||0} - ${as||0}`:(m.display_time|| (d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'))}</div><strong>${escapeHTML(t.away)}</strong></div>
+    </div>
+    <h3 style="margin:12px 2px 8px">スターティングメンバー</h3>
+    ${renderLineupPitch(m)}
+    <div class="statsPanel">
+      <h3>選手スタッツ</h3>
+      <div style="color:#8f9aa7;font-size:12px;line-height:1.6">スタメン発表後、選手をタップすると出場時間・ゴール・アシスト・シュート・パス成功率などをここに表示できるようにする。</div>
+    </div>`;
+}
+document.getElementById('matchesFeed').addEventListener('click',e=>{
+  const card=e.target.closest('.matchCard'); if(!card) return;
+  openMatchDetail(Number(card.dataset.matchIndex));
+});
+document.getElementById('backToMatches').addEventListener('click',()=>{
+  document.getElementById('matchDetail').classList.remove('show');
+  document.getElementById('matchesPage').classList.add('show');
+});
+
 function showView(view){
-  const home=document.getElementById('homeContent'), matches=document.getElementById('matchesPage');
+  const home=document.getElementById('homeContent'), matches=document.getElementById('matchesPage'), detail=document.getElementById('matchDetail');
+  detail.classList.remove('show');
   if(view==='matches'){home.style.display='none';matches.classList.add('show');loadMatches();}
   else{home.style.display='block';matches.classList.remove('show');}
 }

@@ -57,3 +57,21 @@ icon-180.png と icon-512.png は今のリポジトリにあるものをその�
 - 一般試合APIが日本の試合を返さなくてもJリーグは表示
 - 「すべて / Jリーグ / 海外」フィルター追加
 - 一般APIの試合とJリーグ公式日程をマージ
+
+## V1.6 Friendlies + Pitch detail
+- 2026/8/8の海外プレシーズン親善試合を追加
+- 「親善試合」フィルター追加
+- FRIENDLYバッジ
+- 試合カードをタップすると試合詳細へ
+- ピッチ型スターティングメンバー画面を追加
+- 未発表時は「スタメン未発表」と表示
+- 選手スタッツ画面の土台を追加
+
+## V1.7 Barça Triangular
+- Friuli Venezia Giulia Cupを日本時間8/9に表示
+- Udinese vs Nottingham Forest: 第1試合 03:00 JST
+- FC Barcelona vs Nottingham Forest: 第2試合
+- Udinese vs FC Barcelona: 第3試合
+- 全試合45分制を明示
+- バルサ2試合は通常の優先ソートで上位表示
+- 公式未発表の第2・第3試合の正確なKO時刻は捏造せず「第2試合 / 第3試合」で表示
