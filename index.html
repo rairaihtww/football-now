@@ -167,7 +167,7 @@
     .matchHeader h2{margin:0;font-size:20px}
     .matchRefresh{border:0;background:transparent;color:#edbb00;font-weight:850}
     .matchEmpty{text-align:center;color:#9aa7b6;padding:45px 15px}
-    .powered{text-align:center;font-size:10px;color:#778391;margin:18px 0}
+    .officialBadge{font-size:9px;color:#edbb00;font-weight:900;margin-left:6px}.powered{text-align:center;font-size:10px;color:#778391;margin:18px 0}
     .powered a{color:#aeb8c4;text-decoration:none;font-weight:800}
 
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
@@ -223,6 +223,11 @@
   </div>
   <section class="matchesPage" id="matchesPage">
     <div class="matchHeader"><h2>試合</h2><button class="matchRefresh" id="matchRefresh">↻ 更新</button></div>
+    <div class="chips" id="leagueChips" style="padding:14px 0 2px">
+      <button class="chip active" data-league="all">すべて</button>
+      <button class="chip" data-league="jleague">Jリーグ</button>
+      <button class="chip" data-league="world">海外</button>
+    </div>
     <div class="dateTabs">
       <button class="dateTab" data-day="-1">昨日</button>
       <button class="dateTab active" data-day="0">今日</button>
@@ -498,6 +503,63 @@ document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',(
 
 let matchDayOffset=0;
 let matchCache=[];
+let matchLeagueFilter='all';
+
+// J.LEAGUE official opening-round fixtures.
+// These are used as a reliable fallback/merge so J1/J2/J3 do not disappear
+// when the general live-score provider has incomplete Japanese coverage.
+const JLEAGUE_FIXTURES = [
+  {date:'2026-08-07',time:'19:25',league:'明治安田J1リーグ',home:'横浜FM',away:'鹿島'},
+  {date:'2026-08-07',time:'19:30',league:'明治安田J1リーグ',home:'G大阪',away:'浦和'},
+
+  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'柏',away:'水戸'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'FC東京',away:'町田'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'名古屋',away:'清水'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'C大阪',away:'岡山'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J1リーグ',home:'福岡',away:'神戸'},
+  {date:'2026-08-08',time:'19:15',league:'明治安田J1リーグ',home:'広島',away:'千葉'},
+
+  {date:'2026-08-08',time:'14:45',league:'明治安田J2リーグ',home:'札幌',away:'徳島'},
+  {date:'2026-08-08',time:'18:30',league:'明治安田J2リーグ',home:'八戸',away:'富山'},
+  {date:'2026-08-08',time:'18:30',league:'明治安田J2リーグ',home:'藤枝',away:'仙台'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'大宮',away:'新潟'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'磐田',away:'秋田'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'大分',away:'湘南'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J2リーグ',home:'宮崎',away:'横浜FC'},
+  {date:'2026-08-08',time:'19:30',league:'明治安田J2リーグ',home:'鳥栖',away:'甲府'},
+
+  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'相模原',away:'熊本'},
+  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'長野',away:'山口'},
+  {date:'2026-08-08',time:'18:00',league:'明治安田J3リーグ',home:'琉球',away:'北九州'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'鳥取',away:'FC大阪'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'高知',away:'松本'},
+  {date:'2026-08-08',time:'19:00',league:'明治安田J3リーグ',home:'鹿児島',away:'群馬'},
+
+  {date:'2026-08-09',time:'18:00',league:'明治安田J2リーグ',home:'いわき',away:'今治'},
+  {date:'2026-08-09',time:'19:00',league:'明治安田J2リーグ',home:'山形',away:'栃木C'},
+  {date:'2026-08-09',time:'18:00',league:'明治安田J3リーグ',home:'福島',away:'讃岐'},
+  {date:'2026-08-09',time:'18:30',league:'明治安田J3リーグ',home:'滋賀',away:'岐阜'},
+  {date:'2026-08-09',time:'19:00',league:'明治安田J3リーグ',home:'栃木SC',away:'金沢'},
+  {date:'2026-08-09',time:'19:00',league:'明治安田J3リーグ',home:'愛媛',away:'奈良'}
+].map(x=>({
+  ...x,
+  start_time:`${x.date}T${x.time}:00+09:00`,
+  competition:{name:x.league},
+  home_team:{name:x.home},
+  away_team:{name:x.away},
+  source:'J.LEAGUE公式'
+}));
+
+function mergeJLeagueFixtures(apiMatches){
+  const byKey=new Map();
+  [...JLEAGUE_FIXTURES,...apiMatches].forEach(m=>{
+    const t=matchTeams(m);
+    const d=matchDate(m);
+    const key=(d?localDateKey(d):'')+'|'+t.home+'|'+t.away;
+    if(!byKey.has(key) || m.source!=='J.LEAGUE公式') byKey.set(key,m);
+  });
+  return [...byKey.values()];
+}
 
 function localDateKey(date){
   return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
@@ -532,6 +594,8 @@ function renderMatches(){
   const target=new Date(); target.setDate(target.getDate()+matchDayOffset);
   const key=localDateKey(target);
   let list=matchCache.filter(m=>{const d=matchDate(m);return d&&localDateKey(d)===key;});
+  if(matchLeagueFilter==='jleague') list=list.filter(m=>/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
+  if(matchLeagueFilter==='world') list=list.filter(m=>!/J1|J2|J3|Ｊ１|Ｊ２|Ｊ３/i.test(String(m.competition?.name||m.competition||m.league?.name||m.league||'')));
   list.sort((a,b)=>{
     const ta=matchTeams(a),tb=matchTeams(b);
     const ba=/barcelona|バルセロナ/i.test(ta.home+' '+ta.away)?0:1;
@@ -549,7 +613,7 @@ function renderMatches(){
       `<div class="kickoff">${d?d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}):'--:--'}</div>`;
     const comp=m.competition?.name||m.competition||m.league?.name||m.league||m.tournament?.name||'FOOTBALL';
     return `<div class="matchCard ${isBarca?'barca':''}">
-      <div class="competition"><span>${escapeHTML(String(comp))}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
+      <div class="competition"><span>${escapeHTML(String(comp))}${m.source==='J.LEAGUE公式'?'<span class="officialBadge">公式日程</span>':''}</span>${live?'<span class="livePill">LIVE</span>':''}</div>
       <div class="teams"><div class="team">${escapeHTML(t.home)}</div>${middle}<div class="team">${escapeHTML(t.away)}</div></div>
       <div class="matchState">${live?'試合中':done?'試合終了':d?d.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'short',day:'numeric',weekday:'short'}):''}</div>
     </div>`;
@@ -562,10 +626,12 @@ async function loadMatches(){
     const r=await fetch('https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=football-now',{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
-    matchCache=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
+    const api=Array.isArray(d.matches)?d.matches:(Array.isArray(d)?d:[]);
+    matchCache=mergeJLeagueFixtures(api);
     renderMatches();
   }catch(e){
-    box.innerHTML='<div class="matchEmpty">試合情報を取得できませんでした。<br>「更新」を押してもう一度試してください。</div>';
+    matchCache=mergeJLeagueFixtures([]);
+    renderMatches();
   }
 }
 function showView(view){
@@ -573,6 +639,10 @@ function showView(view){
   if(view==='matches'){home.style.display='none';matches.classList.add('show');loadMatches();}
   else{home.style.display='block';matches.classList.remove('show');}
 }
+document.querySelectorAll('#leagueChips .chip').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#leagueChips .chip').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); matchLeagueFilter=b.dataset.league; renderMatches();
+}));
 document.querySelectorAll('.dateTab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.dateTab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
   matchDayOffset=Number(b.dataset.day);renderMatches();
