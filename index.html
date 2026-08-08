@@ -594,70 +594,58 @@ let selectedMatchDate=new Date();
 // when the general live-score provider has incomplete Japanese coverage.
 // V1.9: 試合日程は手入力せず、接続したデータAPIから自動取得します。
 
-function localDateKey(d){
-  if(!d) return '';
-  const date = new Date(d);
-  if(Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('sv-SE', {timeZone:'Asia/Tokyo'});
+function localDateKey(date){
+  if(!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if(Number.isNaN(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(d);
+  const get=t=>parts.find(p=>p.type===t)?.value||'';
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 function matchDate(m){
-  const raw =
-    m.starting_at ||
-    m.startingAt ||
-    m.date ||
-    m.start_time ||
-    m.startTime;
-
+  const raw=m.starting_at||m.utcDate||m.date||m.start_time||m.startTime||m.kickoff||m.fixture?.date||null;
   if(!raw) return null;
-
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const d=new Date(raw);
+  return Number.isNaN(d.getTime())?null:d;
 }
 
 function matchTeams(m){
-  const participants = Array.isArray(m.participants) ? m.participants : [];
-
-  const homeParticipant =
-    participants.find(x => x.meta?.location === 'home') ||
-    participants[0];
-
-  const awayParticipant =
-    participants.find(x => x.meta?.location === 'away') ||
-    participants[1];
-
-  return {
-    home:
-      m.home_team?.name ||
-      m.homeTeam?.name ||
-      homeParticipant?.name ||
-      'HOME',
-
-    away:
-      m.away_team?.name ||
-      m.awayTeam?.name ||
-      awayParticipant?.name ||
-      'AWAY'
-  };
+  let home=m.home_team?.name||m.homeTeam?.name||m.home?.name||'';
+  let away=m.away_team?.name||m.awayTeam?.name||m.away?.name||'';
+  if((!home||!away)&&Array.isArray(m.participants)){
+    const hp=m.participants.find(p=>String(p.meta?.location||'').toLowerCase()==='home');
+    const ap=m.participants.find(p=>String(p.meta?.location||'').toLowerCase()==='away');
+    if(!home) home=hp?.name||'';
+    if(!away) away=ap?.name||'';
+  }
+  if((!home||!away)&&m.name){
+    const parts=String(m.name).split(/\s+vs\.?\s+/i);
+    if(parts.length>=2){
+      if(!home) home=parts[0].trim();
+      if(!away) away=parts.slice(1).join(' vs ').trim();
+    }
+  }
+  return {home:home||'HOME',away:away||'AWAY'};
 }
 
-function scoreValue(m, side){
-  const scores = Array.isArray(m.scores) ? m.scores : [];
-
-  const score = scores.find(x =>
-    x.description === 'CURRENT' &&
-    x.score?.participant === side
-  );
-
-  if(score?.score?.goals != null){
-    return score.score.goals;
+function scoreValue(m,side){
+  const isHome=side==='home';
+  const direct=isHome
+    ? [m.scores?.home,m.home_score,m.homeScore,m.score?.home,m.score?.fullTime?.home,m.score?.fullTime?.homeTeam]
+    : [m.scores?.away,m.away_score,m.awayScore,m.score?.away,m.score?.fullTime?.away,m.score?.fullTime?.awayTeam];
+  for(const v of direct){
+    if(v!==undefined&&v!==null&&v!=='') return v;
   }
-
-  if(side === 'home'){
-    return m.home_score ?? m.homeScore ?? '';
+  if(Array.isArray(m.scores)){
+    const wanted=isHome?'home':'away';
+    const sc=m.scores.find(x=>String(x.description||x.participant||x.location||x.score?.participant||'').toLowerCase().includes(wanted));
+    const v=sc?.score?.goals??sc?.score?.score??sc?.goals??sc?.value;
+    if(v!==undefined&&v!==null) return v;
   }
-
-  return m.away_score ?? m.awayScore ?? '';
+  return '';
 }
 
 function matchStatus(m){
