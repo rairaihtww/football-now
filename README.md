@@ -28,3 +28,10 @@ icon-180.png と icon-512.png は今のリポジトリにあるものをその�
 - ニュースを公開日時の新しい順にソート
 - 直近7日を優先表示
 - バルセロナ検索条件を強化
+
+
+## V1.2
+- BARÇA X: @ReshadRahman / @HermosaCule / @FootballCule
+- TRANSFER X: @FabrizioRomano
+- バルサ/移籍カテゴリーで厳選X情報源を表示
+- 各カードからXの最新投稿へ直接アクセス

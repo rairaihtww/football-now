@@ -133,6 +133,21 @@
       opacity:0;pointer-events:none;transition:.22s;z-index:60;white-space:nowrap
     }
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .xpanel{margin:0 14px 14px;padding:14px;border:1px solid var(--line);border-radius:19px;
+      background:linear-gradient(135deg,rgba(0,77,152,.20),rgba(165,0,68,.13)),var(--card);display:none}
+    .xpanel.show{display:block}
+    .xhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+    .xhead b{font-size:15px}.xhead span{font-size:10px;color:var(--muted)}
+    .xaccounts{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none}
+    .xaccounts::-webkit-scrollbar{display:none}
+    .xaccount{min-width:158px;padding:12px;border-radius:15px;background:#0b111a;border:1px solid #253343;
+      text-decoration:none;color:#fff}
+    .xavatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+      background:linear-gradient(135deg,#004d98,#a50044);font-weight:950;margin-bottom:8px}
+    .xaccount strong{display:block;font-size:12px;margin-bottom:3px}.xaccount small{color:#9aa7b6;font-size:10px}
+    .xaccount .role{display:block;color:#edbb00;font-size:9px;font-weight:900;margin-top:7px}
+
     @media(min-width:700px){body{padding-top:20px}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
   </style>
 </head>
@@ -162,6 +177,12 @@
       <h1>FOOTBALL NOW</h1>
       <p>BARÇA NEWS & MORE<br>最新情報を、速く、見やすく。</p>
     </div>
+  </section>
+
+
+  <section class="xpanel" id="xpanel">
+    <div class="xhead"><b id="xTitle">BARÇA X</b><span>厳選情報源</span></div>
+    <div class="xaccounts" id="xaccounts"></div>
   </section>
 
   <div class="status"><span class="dot"></span><span id="statusText">ニュースを取得しています…</span></div>
@@ -194,6 +215,18 @@ const QUERIES = {
   jleague: 'Jリーグ サッカー',
   europe: '欧州サッカー プレミア ラリーガ セリエA ブンデスリーガ',
   national: 'サッカー 日本代表'
+};
+
+
+const X_SOURCES = {
+  barca: [
+    {name:'Reshad Rahman', handle:'ReshadRahman', role:'BARÇA NEWS'},
+    {name:'Hermosa Cule', handle:'HermosaCule', role:'CULÉ SOURCE'},
+    {name:'Football Cule', handle:'FootballCule', role:'BARÇA SOURCE'}
+  ],
+  transfer: [
+    {name:'Fabrizio Romano', handle:'FabrizioRomano', role:'TRANSFER NEWS'}
+  ]
 };
 
 let state = {
@@ -302,9 +335,26 @@ async function fetchViaAllOrigins(rssUrl){
   })).filter(x=>x.title&&x.link);
 }
 
+
+function renderXSources(){
+  const panel=document.getElementById('xpanel');
+  const sources=X_SOURCES[state.category];
+  if(!sources){panel.classList.remove('show');return;}
+  panel.classList.add('show');
+  document.getElementById('xTitle').textContent=state.category==='barca'?'BARÇA X':'TRANSFER X';
+  document.getElementById('xaccounts').innerHTML=sources.map(x=>`
+    <a class="xaccount" href="https://x.com/${x.handle}" target="_blank" rel="noopener noreferrer">
+      <div class="xavatar">𝕏</div>
+      <strong>${x.name}</strong>
+      <small>@${x.handle}</small>
+      <span class="role">${x.role} → 最新投稿を見る</span>
+    </a>`).join('');
+}
+
 async function loadNews(force=false){
   if(state.loading) return;
   state.loading=true;
+  renderXSources();
   skeletons();
   statusText.textContent='最新ニュースを取得しています…';
   const q=QUERIES[state.category] || QUERIES.all;
@@ -346,6 +396,7 @@ function currentArticles(){
 }
 
 function render(){
+  renderXSources();
   let list=currentArticles();
   const q=state.query.trim().toLowerCase();
   if(q) list=list.filter(a=>(a.title+' '+a.description+' '+a.author).toLowerCase().includes(q));
